@@ -169,7 +169,7 @@ Packages / binaries:
 
 ## [kubectl - The Kubernetes command-line tools](https://github.com/kubernetes/kubectl)
 
-<p align="center"><img alt="kubectl" src="https://raw.githubusercontent.com/kubernetes/kubectl/master//images/kubectl-logo-medium.png" width="300px" /></p>
+<p align="center"><img alt="kubectl" src="https://raw.githubusercontent.com/kubernetes/kubectl/master/images/kubectl-logo-medium.png" width="300px" /></p>
 
 
 The Kubernetes command-line tool, kubectl, allows you to run commands against Kubernetes clusters. You can use kubectl to deploy applications, inspect and manage cluster resources, and view logs.
@@ -213,10 +213,24 @@ Example:
 ```bash
 cat << EOF > .env
 KIND_CLUSTER_NAME=changeme
-KIND_CLUSTER_IMAGE=kindest/node:v1.19.4
+KIND_CLUSTER_IMAGE=kindest/node:v1.19.7
 NETWORK_PREFIX=172.17
 METALLB_SPEAKER_SECRET_VALUE=$(openssl rand -base64 256|tr -d '\n')
 EOF
+```
+
+## Manage your cluster
+
+### Create
+```bash
+make create
+```
+
+![kubens demo GIF](.github/create.gif)
+
+### Destroy
+```bash
+make destroy
 ```
 
 ## DNS (Domain Name System)
