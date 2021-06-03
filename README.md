@@ -153,11 +153,9 @@ extraArgs:
   kubelet-preferred-address-types: InternalIP
 ```
 
----
+# Tools
 
-# Requirements
-
-## Packages / binaries
+Packages / binaries:
 - docker
 - kind
 - helm
@@ -168,50 +166,6 @@ extraArgs:
 - yq
 - lens
 - dnsmasq
-
-Use the following command in order to install tools
-```bash
-make install
-```
-
-## DNS (Domain Name System)
-
-### create your DNS config
-`choose an IP Address in MetalLB IP address ranges.`
-
-```bash
-cat << EOF > dnsmasq-example.conf
-address=/server.domain.tld/10.27.50.33
-EOF
-```
-
-
-each file with following pattern: dnsmasq*.conf will be copied into dnsmasq config folder
-
-### apply DNS config
-
-```bash
-make -f Makefile.install config-dnsmasq
-```
-
-### What's happened ?
-
-1. remove immutable attribute on /etc/resolv.conf
-2. delete /etc/resolv.conf
-3. add 127.0.0.1 into /etc/resolv.conf
-4. add DNS server gived by DHCP server into /etc/resolv.conf
-5. add 8.8.8.8 (google DNS server) into /etc/resolv.conf
-6. add immutable attribute on /etc/resolv.conf
-7. declare port 53 and host 127.0.0.1 in dnsmasq config file
-8. copy dnsmasq*.conf files into dnsmasq config folder
-9. disable service systemd-resolved
-10. restart service dnsmasq
-
-`YOU NEED TO APPLY DNS CONFIG EACH TIME YOU CHANGE NETWORK CONTEXT, EXAMPLE: VPN CONNECTION ETC`
-
----
-
-# Tools
 
 ## [kubectl - The Kubernetes command-line tools](https://github.com/kubernetes/kubectl)
 
@@ -236,3 +190,69 @@ kubens is a utility to switch between Kubernetes namespaces.
 Lens IDE provides the full situational awareness for everything that runs in Kubernetes. It's lowering the barrier of entry for people just getting started and radically improving productivity for people with more experience.
 
 [![Screenshot](https://raw.githubusercontent.com/lensapp/lens/master/.github/screenshot.png)](https://www.youtube.com/watch?v=eeDwdVXattc)
+
+# Usage
+
+## Install tools
+Use the following command in order to install tools
+```bash
+make install
+```
+
+## Config file
+
+Create .env file with following vars:
+| var                          	| definition                               	| more                                       	| example                  	|
+|------------------------------	|------------------------------------------	|--------------------------------------------	|--------------------------	|
+| KIND_CLUSTER_NAME            	| cluster name                             	|                                            	| changeme                 	|
+| KIND_CLUSTER_IMAGE           	| cluster image tag                        	| https://hub.docker.com/r/kindest/node/tags 	| kindest/node:v1.19.4     	|
+| NETWORK_PREFIX               	| network prefix                           	| CIDR: 172.17.0.0/16                        	| 172.17                   	|
+| METALLB_SPEAKER_SECRET_VALUE 	| random 256 character alphanumeric string 	| $(openssl rand -base64 256\|tr -d '\n')    	| bpP0AGV07oQt9jjNINJQFQ== 	|
+
+Example:
+```bash
+cat << EOF > .env
+KIND_CLUSTER_NAME=changeme
+KIND_CLUSTER_IMAGE=kindest/node:v1.19.4
+NETWORK_PREFIX=172.17
+METALLB_SPEAKER_SECRET_VALUE=$(openssl rand -base64 256|tr -d '\n')
+EOF
+```
+
+## DNS (Domain Name System)
+
+### create your DNS config
+
+By default, a explicit start-end range of IPs is reserved for MetalLB : `${NETWORK_PREFIX}.255.1-${NETWORK_PREFIX}.255.254`
+
+`Choose an IP Address in MetalLB IP address ranges and affect it to a fqdn`
+
+Example
+```bash
+cat << EOF > dnsmasq-example.conf
+address=/server.domain.tld/172.17.255.1
+EOF
+```
+`each file with following pattern: dnsmasq*.conf will be copied into dnsmasq config folder`
+
+### apply DNS config
+
+```bash
+make config-dnsmasq
+```
+
+### What's happened ?
+
+1. remove immutable attribute on /etc/resolv.conf
+2. delete /etc/resolv.conf
+3. add 127.0.0.1 into /etc/resolv.conf
+4. add DNS server gived by DHCP server into /etc/resolv.conf
+5. add 8.8.8.8 (google DNS server) into /etc/resolv.conf
+6. add immutable attribute on /etc/resolv.conf
+7. declare port 53 and host 127.0.0.1 in dnsmasq config file
+8. copy dnsmasq*.conf files into dnsmasq config folder
+9. disable service systemd-resolved
+10. restart service dnsmasq
+
+`YOU NEED TO APPLY DNS CONFIG EACH TIME YOU CHANGE NETWORK CONTEXT, EXAMPLE: VPN CONNECTION ETC`
+
