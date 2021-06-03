@@ -82,7 +82,7 @@ create-kind:
 		--image ${KIND_CLUSTER_IMAGE}
 # -v 6
 
-create-metallb: ## apply-metallb
+create-metallb: ## create-metallb
 create-metallb:
 	set -e
 	$(file > ${METALLB_CONFIG_FILE},$(METALLB_CONFIG_FILE_CONTENT))
