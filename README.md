@@ -41,7 +41,7 @@ make install
 
 | name                              	| type    	| information                                	| install                     	|
 |-----------------------------------	|---------	|--------------------------------------------	|-----------------------------	|
-| [Docker Engine](#docker-engine)   	| package 	|                                            	| `make install-docker`        	|
+| [Docker Engine](#docker-engine)   	| package 	| open source containerization technology    	| `make install-docker`        	|
 | [kind](#kind)                     	| binary  	| Kubernetes IN Docker                       	| `make install-kind`          	|
 | [helm](#helm)                     	| binary  	| The package manager for Kubernetes         	| `make install-helm`          	|
 | [lens](#lens)                     	| snap    	| The Kubernetes IDE                         	| `make install-lens`          	|
