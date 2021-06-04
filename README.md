@@ -1,8 +1,10 @@
-# doe-scaffold-infrastructure-kind
+# Kubernetes Development Lab
 
-Run a Kubernetes environment on your machine. Develop Helm Charts and deploy your App.
+This repo brings together different tools around Application development hosted in a Kubernetes cluster.
 
-This allows in particular to :
+`You Build It, You Run It`
+
+With theses tools, you can :
 - develop quickly Kubernetes infrasctructure
 - develop without depending on external resources
 - develop as close as possible to the final execution platform
@@ -11,28 +13,220 @@ This allows in particular to :
 - implement & test high availability
 - realize chaos engineering
 
-`You Build It, You Run It`
+<p align="center">
+A Kubernetes story
+</p>
+<p align="center">
+<a href="https://www.youtube.com/watch?v=R9-SOzep73w">
+<img src="https://raw.githubusercontent.com/cncf/artwork/master/other/phippy-and-friends/phippy/color/phippy-color.svg" height="150">
+</a>
+<a href="https://www.youtube.com/watch?v=R9-SOzep73w">
+<img src="https://raw.githubusercontent.com/cncf/artwork/master/other/phippy-and-friends/zee/color/zee-color.svg" height="105">
+</a>
+<a href="https://www.youtube.com/watch?v=3I9PkvZ80BQ">
+<img src="https://raw.githubusercontent.com/cncf/artwork/master/other/phippy-and-friends/goldie/color/goldie-color.svg" height="80">
+</a>
+<a href="https://www.youtube.com/watch?v=3I9PkvZ80BQ">
+<img src="https://raw.githubusercontent.com/cncf/artwork/master/other/phippy-and-friends/captainkube/color/captainkube-color.svg" height="100">
+</a>
+</p>
 
----
+
+# Toolbox
+
+Use the following command in order to install all-in-one tools
+```bash
+make install
+```
+
+| name                              	| type    	| information                                	| install                     	|
+|-----------------------------------	|---------	|--------------------------------------------	|-----------------------------	|
+| [Docker Engine](#docker-engine)   	| package 	|                                            	| `make install-docker`        	|
+| [kind](#kind)                     	| binary  	| Kubernetes IN Docker                       	| `make install-kind`          	|
+| [helm](#helm)                     	| binary  	| The package manager for Kubernetes         	| `make install-helm`          	|
+| [lens](#lens)                     	| snap    	| The Kubernetes IDE                         	| `make install-lens`          	|
+| [kubectl](#kubectl)               	| package 	| The Kubernetes command-line tools          	| `make install-packages`      	|
+| [kubectx](#kubectx)               	| binary  	| manage and switch between kubectl contexts 	| `make install-kubectx`       	|
+| [kubens](#kubens)                 	| binary  	| switch between Kubernetes namespaces       	| `make install-kubens`        	|
+| [jq](#jq])                         	| package 	| a command-line JSON processor             	| `make install-packages`      	|
+| [yq](#yq)                          	| snap    	| a command-line YAML processor              	| `make install-yq`            	|
+| [dnsmasq](#dns)                   	| package 	| Domain Name System                         	| `make install-dnsmasq`       	|
+| [dig](#dig)                       	| package 	| querying the Domain Name System           	| `make install-packages`      	|
+| [ping](#ping)                   	  | package 	| test the reachability of a host             | `make install-packages`     	|
+| [nc](#nc)                   	      | package 	| R/W to network connections using TCP or UDP	| `make install-packages`      	|
+
+
+## [Docker Engine](https://docs.docker.com/get-started/overview/)
+
+<p align="center"><a href="https://docs.docker.com/get-started/overview/"><img alt="Moby" src=".github/1280px-Docker_container_engine_logo.svg.png" width="500px" /></a></p>
+
+
+Docker is an open platform for developing, shipping, and running applications. Docker enables you to separate your applications from your infrastructure so you can deliver software quickly. With Docker, you can manage your infrastructure in the same ways you manage your applications. By taking advantage of Docker’s methodologies for shipping, testing, and deploying code quickly, you can significantly reduce the delay between writing code and running it in production.
+
+
+<p align="center"><a href="https://docs.docker.com/get-started/overview/#docker-architecture"><img alt="kind" src="https://docs.docker.com/engine/images/architecture.svg" width="600px" /></a></p>
 
 ## [kind](https://kind.sigs.k8s.io/)
-<p align="center"><img alt="kind" src="https://raw.githubusercontent.com/kubernetes-sigs/kind/main/logo/logo.png" width="300px" /></p>
+<p align="center"><a href="https://kind.sigs.k8s.io/"><img alt="kind" src="https://raw.githubusercontent.com/kubernetes-sigs/kind/main/logo/logo.png" width="300px" /></a></p>
 
 
-[Kubernetes IN Docker](https://kind.sigs.k8s.io/) is a tool for running local Kubernetes clusters using Docker container “nodes”.
+`kind` or **k**ubernetes **in** **d**ocker  is a tool for running local Kubernetes clusters using Docker container “nodes”.
 kind was primarily designed for testing Kubernetes itself, but may be used for local development or CI.
 
 ![](https://raw.githubusercontent.com/kubernetes-sigs/kind/main/site/static/images/kind-create-cluster.png)
 
-### kubernetes version
+kind consists of:
+- Go [packages](https://github.com/kubernetes-sigs/kind/tree/main/pkg) implementing [cluster creation](https://github.com/kubernetes-sigs/kind/tree/main/pkg/cluster), [image build](https://github.com/kubernetes-sigs/kind/tree/main/pkg/build), etc.
+- A command line interface ([`kind`](https://github.com/kubernetes-sigs/kind/blob/main/main.go)) built on these packages.
+- Docker [image(s)](https://github.com/kubernetes-sigs/kind/tree/main/images) written to run systemd, Kubernetes, etc.
+- [`kubetest`](https://github.com/kubernetes/test-infra/tree/master/kubetest) integration also built on these packages (WIP)
 
-You can choose your kubernetes version here: [https://hub.docker.com/r/kindest/node/tags](https://hub.docker.com/r/kindest/node/tags)
 
-### configuration
+<p align="center"><a href="https://kind.sigs.k8s.io/docs/design/initial#overview"><img alt="kind" src=".github/kind-design.png" width="1000px" /></a></p>
 
-You can customize kind cluster with an YAML file, folling example will create 1 control-plane and 1 worker. We affect a label to this worker.
+## [Helm](https://helm.sh/)
+
+<p align="center"><a href="https://helm.sh/">
+<img alt="hem" src="https://artifacthub.io/static/media/helm-chart.svg" width="250" height="250">
+</a></p>
+
+
+Helm is a tool for managing Charts. Charts are packages of pre-configured Kubernetes resources.
+
+Use Helm to:
+- Find and use popular software packaged as Helm Charts to run in Kubernetes
+- Share your own applications as Helm Charts
+- Create reproducible builds of your Kubernetes applications
+- Intelligently manage your Kubernetes manifest files
+- Manage releases of Helm packages
+
+## [Lens](https://github.com/lensapp/lens)
+
+Lens IDE provides the full situational awareness for everything that runs in Kubernetes. It's lowering the barrier of entry for people just getting started and radically improving productivity for people with more experience.
+
+[![Screenshot](https://raw.githubusercontent.com/lensapp/lens/master/.github/screenshot.png)](https://www.youtube.com/watch?v=eeDwdVXattc)
+
+
+## [kubectl](https://github.com/kubernetes/kubectl)
+
+<p align="center"><a href="https://github.com/kubernetes/kubectl">
+<img alt="kubectl" src="https://raw.githubusercontent.com/kubernetes/kubectl/master/images/kubectl-logo-medium.png" width="300px" /></a></p>
+
+
+The Kubernetes command-line tool, kubectl, allows you to run commands against Kubernetes clusters. You can use kubectl to deploy applications, inspect and manage cluster resources, and view logs.
+
+## [kubectx](https://github.com/ahmetb/kubectx)
+kubectx is a utility to manage and switch between kubectl contexts.
+
+<p align="center"><a href="https://github.com/ahmetb/kubectx"><img alt="kubectx" src="https://raw.githubusercontent.com/ahmetb/kubectx/master/img/kubectx-demo.gif"></a></p>
+
+## [kubens](https://github.com/ahmetb/kubectx)
+kubens is a utility to switch between Kubernetes namespaces.
+
+<p align="center"><a href="https://github.com/ahmetb/kubectx"><img alt="kubectx" src="https://raw.githubusercontent.com/ahmetb/kubectx/master/img/kubens-demo.gif"></a></p>
+
+## [jq](https://github.com/stedolan/jq)
+jq is a lightweight and flexible command-line JSON processor.
+
+If you want to learn to use jq, read the documentation at https://stedolan.github.io/jq. This documentation is generated from the docs/ folder of this repository. You can also try it online at jqplay.org.
+
+```json
+curl -s https://www.gstatic.com/ipranges/cloud.json | jq '[[.prefixes[] | del(.service) | select(.scope | match("^europe-west1$") ) ] | limit(3; .[] )]'
+[
+  {
+    "ipv4Prefix": "8.34.208.0/23",
+    "scope": "europe-west1"
+  },
+  {
+    "ipv4Prefix": "8.34.211.0/24",
+    "scope": "europe-west1"
+  },
+  {
+    "ipv4Prefix": "8.34.220.0/22",
+    "scope": "europe-west1"
+  }
+]
+
+```
+
+## [yq](https://github.com/mikefarah/yq)
+
+yq is a lightweight and portable command-line YAML processor. yq uses jq like syntax but works with yaml files as well as json. It doesn't yet support everything jq does - but it does support the most common operations and functions, and more is being added continuously.
 
 ```yaml
+curl -s https://www.gstatic.com/ipranges/cloud.json | jq '[[.prefixes[] | del(.service) | select(.scope | match("^europe-west1$") ) ] | limit(3; .[] )]'|yq eval -P
+- ipv4Prefix: 8.34.208.0/23
+  scope: europe-west1
+- ipv4Prefix: 8.34.211.0/24
+  scope: europe-west1
+- ipv4Prefix: 8.34.220.0/22
+  scope: europe-west1
+```
+
+## dig
+
+```bash
+dig A +short server.domain.tld
+172.17.255.1
+```
+
+## ping
+
+Ping is a computer network administration software utility used to test the reachability of a host on an Internet Protocol (IP) network. It is available for virtually all operating systems that have networking capability, including most embedded network administration software
+
+```bash
+ping server.domain.tld       
+PING server.domain.tld (172.17.255.1) 56(84) bytes of data.
+64 octets de server.domain.tld : icmp_seq=1 ttl=116 temps=44.5 ms
+64 octets de server.domain.tld : icmp_seq=2 ttl=116 temps=44.2 ms
+64 octets de server.domain.tld : icmp_seq=3 ttl=116 temps=44.6 ms
+64 octets de server.domain.tld : icmp_seq=4 ttl=116 temps=44.1 ms
+^C
+--- statistiques ping server.domain.tld ---
+4 paquets transmis, 4 reçus, 0 % paquets perdus, temps 3005 ms
+rtt min/avg/max/mdev = 44.068/44.341/44.637/0.224 ms
+```
+
+## nc
+
+**netcat** (often abbreviated to **nc**) is a computer networking utility for reading from and writing to network connections using **TCP** or **UDP**. The command is designed to be a dependable back-end that can be used directly or easily driven by other programs and scripts. At the same time, it is a feature-rich network debugging and investigation tool, since it can produce almost any kind of connection its user could need and has a number of built-in capabilities.
+
+Its list of features includes port scanning, transferring files, and port listening, and it can be used as a backdoor. 
+
+```bash
+nc -vz 172.17.255.1 80                                                                      
+Connection to 172.17.255.1 80 port [tcp/domain] succeeded!
+```
+
+# Prerequisite
+
+## Environment variables
+
+Create `.env` file with following vars:
+| var                          	| definition                               	| more                                       	| example                  	|
+|------------------------------	|------------------------------------------	|--------------------------------------------	|--------------------------	|
+| KIND_CLUSTER_NAME            	| cluster name                             	|                                            	| changeme                 	|
+| KIND_CLUSTER_IMAGE           	| kubernetes version                       	| https://hub.docker.com/r/kindest/node/tags 	| kindest/node:v1.19.4     	|
+| NETWORK_PREFIX               	| network prefix                           	| CIDR: 172.17.0.0/16                        	| 172.17                   	|
+| METALLB_SPEAKER_SECRET_VALUE 	| random 256 character alphanumeric string 	| $(openssl rand -base64 256\|tr -d '\n')    	| bpP0AGV07oQt9jjNINJQFQ== 	|
+
+Example:
+```bash
+cat << EOF > .env
+KIND_CLUSTER_NAME=changeme
+KIND_CLUSTER_IMAGE=kindest/node:v1.19.7
+NETWORK_PREFIX=172.17
+METALLB_SPEAKER_SECRET_VALUE=$(openssl rand -base64 256|tr -d '\n')
+EOF
+```
+
+## [Configuration](https://kind.sigs.k8s.io/docs/user/configuration/)
+
+Create kind-config.yaml in order to customize kind cluster, folling example will create 1 control-plane and 1 worker. We affect a label to this worker.
+
+Example:
+```bash
+cat << EOF > kind-config.yaml
 ---
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
@@ -48,28 +242,52 @@ nodes:
 EOF
 ```
 
-### volumes
+> reference: [https://kind.sigs.k8s.io/docs/user/configuration/](https://kind.sigs.k8s.io/docs/user/configuration/)
 
-You can share a local volume with kind cluster and mount it into your POD thanks [PV and PVC](https://kubernetes.io/docs/concepts/storage/persistent-volumes/)
+## Volumes
 
-link: [https://stackoverflow.com/questions/62694361/how-to-reference-a-local-volume-in-kind-kubernetes-in-docker](https://stackoverflow.com/questions/62694361/how-to-reference-a-local-volume-in-kind-kubernetes-in-docker)
-
+```yaml
 ---
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+- role: control-plane
+  # add a mount from /path/to/my/files on the host to /files on the node
+  extraMounts:
+  - hostPath: /path/to/my/files/
+    containerPath: /files
+```
 
-### [Helm - The package manager for Kubernetes](https://helm.sh/)
+You can share a local volume with kind cluster and mount it into your POD thanks [PV](https://kubernetes.io/docs/concepts/storage/persistent-volumes/) and PVC
 
-Helm is a tool for managing Charts. Charts are packages of pre-configured Kubernetes resources.
+> reference: [https://stackoverflow.com/questions/62694361/how-to-reference-a-local-volume-in-kind-kubernetes-in-docker](https://stackoverflow.com/questions/62694361/how-to-reference-a-local-volume-in-kind-kubernetes-in-docker)
 
-Use Helm to:
-- Find and use popular software packaged as Helm Charts to run in Kubernetes
-- Share your own applications as Helm Charts
-- Create reproducible builds of your Kubernetes applications
-- Intelligently manage your Kubernetes manifest files
-- Manage releases of Helm packages
 
----
+# [kind](https://kind.sigs.k8s.io/)
 
-### [MetalLB](https://metallb.universe.tf/)
+## Create kubernetes cluster & deploy charts
+
+Use the following command in order to initialize all-in-one steps
+
+```bash
+make create
+```
+
+| name                              	| type    	| information                                	| install                     	|
+|-----------------------------------	|---------	|--------------------------------------------	|------------------------------	|
+| docker-network                     	| chart   	| create a docker network                     | `make create-docker-network` 	|
+| kind                               	| chart   	| create a kind cluster                     	| `make create-kind`           	|
+| [MetalLB](#metallb)               	| chart   	| deploy MetalLB into cluster                	| `make deploy-metallb`        	|
+| [Metrics Server](#metrics-server) 	| chart   	| deploy Metrics Server into cluster        	| `make deploy-metrics-server` 	|
+
+![kubens demo GIF](.github/create.gif)
+
+## Destroy
+```bash
+make destroy
+```
+
+## [MetalLB](https://metallb.universe.tf/)
 
 MetalLB is a load-balancer implementation for bare metal Kubernetes clusters, using standard routing protocols.
 It handles the ServiceType: Loadbalancer.
@@ -112,7 +330,7 @@ speaker:
     1Xa2rGCUkJ/S2lVwc4EzaQ==
 ```
 
-### [Metrics Server](https://github.com/kubernetes-sigs/metrics-server)
+## [Metrics Server](https://github.com/kubernetes-sigs/metrics-server)
 
 Metrics Server is a scalable, efficient source of container resource metrics for Kubernetes built-in autoscaling pipelines.
 
@@ -153,89 +371,9 @@ extraArgs:
   kubelet-preferred-address-types: InternalIP
 ```
 
-# Tools
+# DNS
 
-Packages / binaries:
-- docker
-- kind
-- helm
-- kubectl
-- kubectx
-- kubens
-- jq
-- yq
-- lens
-- dnsmasq
-
-## [kubectl - The Kubernetes command-line tools](https://github.com/kubernetes/kubectl)
-
-<p align="center"><img alt="kubectl" src="https://raw.githubusercontent.com/kubernetes/kubectl/master/images/kubectl-logo-medium.png" width="300px" /></p>
-
-
-The Kubernetes command-line tool, kubectl, allows you to run commands against Kubernetes clusters. You can use kubectl to deploy applications, inspect and manage cluster resources, and view logs.
-
-
-## [kubectx](https://github.com/ahmetb/kubectx)
-kubectx is a utility to manage and switch between kubectl contexts.
-
-![kubectx demo GIF](https://raw.githubusercontent.com/ahmetb/kubectx/master/img/kubectx-demo.gif)
-
-## [kubens](https://github.com/ahmetb/kubectx)
-kubens is a utility to switch between Kubernetes namespaces.
-
-![kubens demo GIF](https://raw.githubusercontent.com/ahmetb/kubectx/master/img/kubens-demo.gif)
-
-## [Lens - The Kubernetes IDE](https://github.com/lensapp/lens)
-
-Lens IDE provides the full situational awareness for everything that runs in Kubernetes. It's lowering the barrier of entry for people just getting started and radically improving productivity for people with more experience.
-
-[![Screenshot](https://raw.githubusercontent.com/lensapp/lens/master/.github/screenshot.png)](https://www.youtube.com/watch?v=eeDwdVXattc)
-
-# Usage
-
-## Install tools
-Use the following command in order to install tools
-```bash
-make install
-```
-
-## Config file
-
-Create .env file with following vars:
-| var                          	| definition                               	| more                                       	| example                  	|
-|------------------------------	|------------------------------------------	|--------------------------------------------	|--------------------------	|
-| KIND_CLUSTER_NAME            	| cluster name                             	|                                            	| changeme                 	|
-| KIND_CLUSTER_IMAGE           	| cluster image tag                        	| https://hub.docker.com/r/kindest/node/tags 	| kindest/node:v1.19.4     	|
-| NETWORK_PREFIX               	| network prefix                           	| CIDR: 172.17.0.0/16                        	| 172.17                   	|
-| METALLB_SPEAKER_SECRET_VALUE 	| random 256 character alphanumeric string 	| $(openssl rand -base64 256\|tr -d '\n')    	| bpP0AGV07oQt9jjNINJQFQ== 	|
-
-Example:
-```bash
-cat << EOF > .env
-KIND_CLUSTER_NAME=changeme
-KIND_CLUSTER_IMAGE=kindest/node:v1.19.7
-NETWORK_PREFIX=172.17
-METALLB_SPEAKER_SECRET_VALUE=$(openssl rand -base64 256|tr -d '\n')
-EOF
-```
-
-## Manage your cluster
-
-### Create
-```bash
-make create
-```
-
-![kubens demo GIF](.github/create.gif)
-
-### Destroy
-```bash
-make destroy
-```
-
-## DNS (Domain Name System)
-
-### create your DNS config
+## create your DNS config
 
 By default, a explicit start-end range of IPs is reserved for MetalLB : `${NETWORK_PREFIX}.255.1-${NETWORK_PREFIX}.255.254`
 
@@ -249,13 +387,13 @@ EOF
 ```
 `each file with following pattern: dnsmasq*.conf will be copied into dnsmasq config folder`
 
-### apply DNS config
+## apply DNS config
 
 ```bash
 make config-dnsmasq
 ```
 
-### What's happened ?
+## What's happened ?
 
 1. remove immutable attribute on /etc/resolv.conf
 2. delete /etc/resolv.conf

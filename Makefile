@@ -1,27 +1,13 @@
 include .env
 
-KIND_CONFIG_FILE := /tmp/kind-${KIND_CLUSTER_NAME}-config.yml
+# KIND_CONFIG_FILE := /tmp/kind-${KIND_CLUSTER_NAME}-config.yml
+KIND_CONFIG_FILE := kind-config.yaml
 METALLB_CONFIG_FILE := /tmp/metallb-${KIND_CLUSTER_NAME}-config.yml
 METRICS_SERVER_CONFIG_FILE := /tmp/metrics-server-${KIND_CLUSTER_NAME}-config.yml
 KUBE_CONTEXT := kind-${KIND_CLUSTER_NAME}
 NETWORK_CIDR := ${NETWORK_PREFIX}.0.0/16
 NETWORK_GATEWAY := ${NETWORK_PREFIX}.0.1
 METALLB_DEFAULT_ADDRESS_POOL=${NETWORK_PREFIX}.255.1-${NETWORK_PREFIX}.255.254
-
-define KIND_CONFIG_FILE_CONTENT :=
----
-kind: Cluster
-apiVersion: kind.x-k8s.io/v1alpha4
-nodes:
-- role: control-plane
-- role: worker
-  kubeadmConfigPatches:
-  - |
-    kind: JoinConfiguration # InitConfiguration
-    nodeRegistration:
-      kubeletExtraArgs:
-        node-labels: "role=api"
-endef
 
 define METALLB_CONFIG_FILE_CONTENT :=
 ---
@@ -55,7 +41,7 @@ endef
 SHELL := /bin/bash
 
 create: ## create
-create: create-docker-network create-kind create-metallb create-metrics-server
+create: create-docker-network create-kind deploy-metallb deploy-metrics-server
 
 # KIND_EXPERIMENTAL_DOCKER_NETWORK
 create-docker-network: ## create-docker-network
@@ -74,7 +60,7 @@ create-docker-network:
 create-kind: ## create-kind
 create-kind:
 	set -e
-	$(file > ${KIND_CONFIG_FILE},${KIND_CONFIG_FILE_CONTENT})
+#	$(file > ${KIND_CONFIG_FILE},${KIND_CONFIG_FILE_CONTENT})
 	export KIND_EXPERIMENTAL_DOCKER_NETWORK=${KIND_CLUSTER_NAME}
 	kind create cluster \
 		--name ${KIND_CLUSTER_NAME} \
@@ -82,8 +68,8 @@ create-kind:
 		--image ${KIND_CLUSTER_IMAGE}
 # -v 6
 
-create-metallb: ## create-metallb
-create-metallb:
+deploy-metallb: ## deploy-metallb
+deploy-metallb:
 	set -e
 	$(file > ${METALLB_CONFIG_FILE},$(METALLB_CONFIG_FILE_CONTENT))
 	helm repo add --force-update metallb https://charts.bitnami.com/bitnami
@@ -102,8 +88,8 @@ create-metallb:
 		--version 2.3.7 \
 		metallb metallb/metallb
 
-create-metrics-server: ## create-metrics-server
-create-metrics-server:
+deploy-metrics-server: ## deploy-metrics-server
+deploy-metrics-server:
 	set -e
 	$(file > ${METRICS_SERVER_CONFIG_FILE},$(METRICS_SERVER_CONFIG_FILE_CONTENT))
 	helm repo add --force-update bitnami https://charts.bitnami.com/bitnami
@@ -191,7 +177,7 @@ install-kind:
 
 install-packages: ## install-packages
 install-packages:
-	packages="openssl kubectl jq jo"; \
+	packages="openssl kubectl jq jo dnsutils iputils-ping netcat procps curl mariadb-client"; \
 	packages_list=''; \
 	for package in $$packages; do [ -z "`dpkg -l | grep -P "ii\s+$$package\s+" || :`" ] && packages_list="$$packages_list $$package"; done
 	if ! [ -z "$$packages_list" ]; then \
