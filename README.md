@@ -17,7 +17,7 @@ With theses tools, you can :
 A Kubernetes story
 </p>
 <p align="center">
-<a href="https://www.youtube.com/watch?v=R9-SOzep73w" target="_blank">
+<a href="https://www.youtube.com/watch?v=R9-SOzep73w">
 <img src="https://raw.githubusercontent.com/cncf/artwork/master/other/phippy-and-friends/phippy/color/phippy-color.svg" height="150">
 </a>
 <a href="https://www.youtube.com/watch?v=R9-SOzep73w">
