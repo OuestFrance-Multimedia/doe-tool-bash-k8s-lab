@@ -165,6 +165,11 @@ curl -s https://www.gstatic.com/ipranges/cloud.json | jq '[[.prefixes[] | del(.s
 
 ## dig
 
+ dig is a network administration command-line tool for querying the Domain Name System (DNS).
+
+dig is useful for network troubleshooting and for educational purposes. It can operate based on command line option and flag arguments, or in batch mode by reading requests from an operating system file. When a specific name server is not specified in the command invocation, it uses the operating system's default resolver, usually configured in the file resolv.conf. Without any arguments it queries the DNS root zone. 
+
+Example
 ```bash
 dig A +short server.domain.tld
 172.17.255.1
@@ -174,6 +179,7 @@ dig A +short server.domain.tld
 
 Ping is a computer network administration software utility used to test the reachability of a host on an Internet Protocol (IP) network. It is available for virtually all operating systems that have networking capability, including most embedded network administration software
 
+Example
 ```bash
 ping server.domain.tld       
 PING server.domain.tld (172.17.255.1) 56(84) bytes of data.
@@ -193,6 +199,7 @@ rtt min/avg/max/mdev = 44.068/44.341/44.637/0.224 ms
 
 Its list of features includes port scanning, transferring files, and port listening, and it can be used as a backdoor. 
 
+Example
 ```bash
 nc -vz 172.17.255.1 80                                                                      
 Connection to 172.17.255.1 80 port [tcp/domain] succeeded!
@@ -206,7 +213,7 @@ Create `.env` file with following vars:
 | var                          	| definition                               	| more                                       	| example                  	|
 |------------------------------	|------------------------------------------	|--------------------------------------------	|--------------------------	|
 | KIND_CLUSTER_NAME            	| cluster name                             	|                                            	| changeme                 	|
-| KIND_CLUSTER_IMAGE           	| kubernetes version                       	| https://hub.docker.com/r/kindest/node/tags 	| kindest/node:v1.19.4     	|
+| KIND_CLUSTER_IMAGE           	| kubernetes version                       	| https://hub.docker.com/r/kindest/node/tags 	| kindest/node:v1.19.7     	|
 | NETWORK_PREFIX               	| network prefix                           	| CIDR: 172.17.0.0/16                        	| 172.17                   	|
 | METALLB_SPEAKER_SECRET_VALUE 	| random 256 character alphanumeric string 	| $(openssl rand -base64 256\|tr -d '\n')    	| bpP0AGV07oQt9jjNINJQFQ== 	|
 
@@ -317,7 +324,7 @@ configInline:
     # will all share the same settings. Each range can be either a
     # CIDR prefix, or an explicit start-end range of IPs.
     addresses:
-    - 10.27.50.30-10.27.50.35
+    - 172.17.255.1-172.17.255.254
 speaker:
   ## random 256 character alphanumeric string
   ## openssl rand -base64 256
