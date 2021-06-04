@@ -246,6 +246,8 @@ EOF
 
 ## Volumes
 
+You can share a local volume with kind cluster and mount it into your POD thanks [PV](https://kubernetes.io/docs/concepts/storage/persistent-volumes/) and PVC
+
 ```yaml
 ---
 kind: Cluster
@@ -257,8 +259,6 @@ nodes:
   - hostPath: /path/to/my/files/
     containerPath: /files
 ```
-
-You can share a local volume with kind cluster and mount it into your POD thanks [PV](https://kubernetes.io/docs/concepts/storage/persistent-volumes/) and PVC
 
 > reference: [https://stackoverflow.com/questions/62694361/how-to-reference-a-local-volume-in-kind-kubernetes-in-docker](https://stackoverflow.com/questions/62694361/how-to-reference-a-local-volume-in-kind-kubernetes-in-docker)
 
