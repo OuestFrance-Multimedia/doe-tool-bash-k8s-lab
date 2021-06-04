@@ -287,12 +287,13 @@ make create
 | [MetalLB](#metallb)               	| chart   	| deploy MetalLB into cluster                	| `make deploy-metallb`        	|
 | [Metrics Server](#metrics-server) 	| chart   	| deploy Metrics Server into cluster        	| `make deploy-metrics-server` 	|
 
-![kubens demo GIF](.github/create.gif)
+![create lab demo GIF](.github/create.gif)
 
 ## Destroy
 ```bash
 make destroy
 ```
+![destroy lab demo GIF](.github/destroy.gif)
 
 ## [MetalLB](https://metallb.universe.tf/)
 
