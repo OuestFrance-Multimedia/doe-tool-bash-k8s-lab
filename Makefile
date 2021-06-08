@@ -72,7 +72,7 @@ deploy-metallb: ## deploy-metallb
 deploy-metallb:
 	set -e
 	$(file > ${METALLB_CONFIG_FILE},$(METALLB_CONFIG_FILE_CONTENT))
-	helm repo add --force-update metallb https://charts.bitnami.com/bitnami
+	helm repo add --force-update bitnami https://charts.bitnami.com/bitnami
 # kubectl get all -n metallb -oyaml|grep -Po "image: \K(\S+)"|sort|uniq
 	docker pull docker.io/bitnami/metallb-controller:0.9.6-debian-10-r52
 	docker pull docker.io/bitnami/metallb-speaker:0.9.6-debian-10-r54
@@ -86,7 +86,7 @@ deploy-metallb:
 		--namespace metallb \
 		--create-namespace \
 		--version 2.3.7 \
-		metallb metallb/metallb
+		metallb bitnami/metallb
 
 deploy-metrics-server: ## deploy-metrics-server
 deploy-metrics-server:
