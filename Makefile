@@ -161,19 +161,36 @@ prepare-env:
 
 install-kind: ## install-kind
 install-kind:
-	if [[ ! -f $(BIN_DIR)/kind ]] ; then \
-		architecture="" ; \
-		case $$(uname -m) in \
-			x86_64) architecture="amd64" ;; \
-			amd64) architecture="amd64" ;; \
-			arm64) architecture="arm64" ;; \
-			aarch64) architecture="arm64" ;; \
-			arm)	dpkg --print-architecture | grep -q "arm64" && architecture="arm64" ;; \
-		esac ; \
-		curl -Lo ./kind https://kind.sigs.k8s.io/dl/v0.11.0/kind-linux-$${architecture}
-		chmod +x ./kind
-		mv ./kind $(BIN_DIR)/kind
-	fi; \
+	set -e
+	arch="" ; \
+	case $$(uname -m) in \
+		x86_64) arch="amd64" ;; \
+		amd64) arch="amd64" ;; \
+		arm64) arch="arm64" ;; \
+		aarch64) arch="arm64" ;; \
+		arm)	dpkg --print-architecture | grep -q "arm64" && arch="arm64" ;; \
+	esac ; \
+	repo=kubernetes-sigs/kind; \
+	word=kind; \
+	content_type=$${content_type:-application}; \
+	os=$${os:-linux}; \
+	word=$${word:-$$(basename $$repo)}; \
+	releases=$$(curl \
+		$${GITHUB_PERSONAL_ACCESS_TOKEN:+--header 'Authorization: bearer '$$GITHUB_PERSONAL_ACCESS_TOKEN} \
+		--silent \
+		--url https://api.github.com/repos/$$repo/releases); \
+	release=$$(echo "$$releases" | jq --arg os $${os,,} --arg arch $${arch,,} --arg content_type $${content_type,,} --arg word $${word,,} 'first( .[] | select(.prerelease == false) | .assets[] | select(.name|ascii_downcase|contains($$os)) | select(.name|ascii_downcase|contains($$arch)) | select(.content_type|ascii_downcase|contains($$content_type)) | select(.name|ascii_downcase|contains($$word)) | select(.size >= 1048576) )'); \
+	url=$$(echo "$${release}" | jq -r '.browser_download_url'); \
+	file="/tmp/$$(basename $$url)"; \
+	echo $$file; \
+	curl \
+		$${GITHUB_PERSONAL_ACCESS_TOKEN:+--header 'Authorization: bearer '$$GITHUB_PERSONAL_ACCESS_TOKEN} \
+		--silent \
+		--location \
+		--output $$file \
+		--url $$url; \
+	chmod +x $$file
+	mv $$file $(BIN_DIR)/kind
 
 install-packages: ## install-packages
 install-packages:
