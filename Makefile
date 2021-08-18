@@ -116,7 +116,7 @@ destroy:
 BIN_DIR := ~/bin
 
 install: ## install
-install: install-docker prepare-env install-kind install-packages install-helm install-yq install-lens install-kubectx install-kubens install-dnsmasq
+install: install-docker prepare-env install-packages install-kind install-helm install-yq install-lens install-kubectx install-kubens install-dnsmasq
 
 install-docker: ## install-docker
 install-docker:
