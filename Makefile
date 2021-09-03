@@ -68,16 +68,30 @@ create-kind:
 		--image ${KIND_CLUSTER_IMAGE}
 # -v 6
 
+METALLB_REPO := bitnami
+METALLB_CHART := metallb
+METALLB_VERSION := 2.5.4 # 2.3.7 # helm search repo bitnami/metallb --output yaml| yq e '.[0].version' -
+METALLB_VALUES := $$(helm inspect values ${METALLB_REPO}/${METALLB_CHART} --version ${METALLB_VERSION})
+METALLB_CONTROLLER_IMAGE_REGISTRY := 		$$(echo "${METALLB_VALUES}" | yq e '.controller.image.registry' -)
+METALLB_CONTROLLER_IMAGE_REPOSITORY := 	$$(echo "${METALLB_VALUES}" | yq e '.controller.image.repository' -)
+METALLB_CONTROLLER_IMAGE_TAG := 				$$(echo "${METALLB_VALUES}" | yq e '.controller.image.tag' -)
+METALLB_CONTROLLER_IMAGE := "${METALLB_CONTROLLER_IMAGE_REGISTRY}/${METALLB_CONTROLLER_IMAGE_REPOSITORY}:${METALLB_CONTROLLER_IMAGE_TAG}"
+METALLB_SPEAKER_IMAGE_REGISTRY := 			$$(echo "${METALLB_VALUES}" | yq e '.speaker.image.registry' -)
+METALLB_SPEAKER_IMAGE_REPOSITORY := 		$$(echo "${METALLB_VALUES}" | yq e '.speaker.image.repository' -)
+METALLB_SPEAKER_IMAGE_TAG := 						$$(echo "${METALLB_VALUES}" | yq e '.speaker.image.tag' -)
+METALLB_SPEAKER_IMAGE := "${METALLB_SPEAKER_IMAGE_REGISTRY}/${METALLB_SPEAKER_IMAGE_REPOSITORY}:${METALLB_SPEAKER_IMAGE_TAG}"
+
+# https://hub.kubeapps.com/charts/bitnami/metallb/2.5.4
 deploy-metallb: ## deploy-metallb
 deploy-metallb:
 	set -e
 	$(file > ${METALLB_CONFIG_FILE},$(METALLB_CONFIG_FILE_CONTENT))
 	helm repo add --force-update bitnami https://charts.bitnami.com/bitnami
 # kubectl get all -n metallb -oyaml|grep -Po "image: \K(\S+)"|sort|uniq
-	docker pull docker.io/bitnami/metallb-controller:0.9.6-debian-10-r52
-	docker pull docker.io/bitnami/metallb-speaker:0.9.6-debian-10-r54
-	kind load docker-image docker.io/bitnami/metallb-controller:0.9.6-debian-10-r52 --name ${KIND_CLUSTER_NAME}
-	kind load docker-image docker.io/bitnami/metallb-speaker:0.9.6-debian-10-r54 --name ${KIND_CLUSTER_NAME}
+	docker pull ${METALLB_CONTROLLER_IMAGE}
+	docker pull ${METALLB_SPEAKER_IMAGE}
+	kind load docker-image ${METALLB_CONTROLLER_IMAGE} --name ${KIND_CLUSTER_NAME}
+	kind load docker-image ${METALLB_SPEAKER_IMAGE} --name ${KIND_CLUSTER_NAME}
 	helm upgrade \
 		--kube-context $(KUBE_CONTEXT) \
 		--install \
@@ -85,7 +99,7 @@ deploy-metallb:
 		--values ${METALLB_CONFIG_FILE} \
 		--namespace metallb \
 		--create-namespace \
-		--version 2.3.7 \
+		--version ${METALLB_VERSION} \
 		metallb bitnami/metallb
 
 deploy-metrics-server: ## deploy-metrics-server

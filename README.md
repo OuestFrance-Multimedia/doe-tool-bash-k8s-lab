@@ -302,7 +302,7 @@ It handles the ServiceType: Loadbalancer.
 
 We can use MetalLB in order to reserve an IP Address in docker network and expose our kubernetes services.
 
-MetalLB is deploy with Helm Chart: https://hub.kubeapps.com/charts/bitnami/metallb/2.3.7
+MetalLB is deploy with Helm Chart: https://hub.kubeapps.com/charts/bitnami/metallb/2.5.4
 
 Example of an YAML config file:
 ```yaml
