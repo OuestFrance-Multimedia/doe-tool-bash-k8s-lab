@@ -4,34 +4,12 @@ include .env
 KIND_CONFIG_FILE := kind-config.yaml
 METALLB_CONFIG_FILE := /tmp/metallb-${KIND_CLUSTER_NAME}-config.yml
 METRICS_SERVER_CONFIG_FILE := /tmp/metrics-server-${KIND_CLUSTER_NAME}-config.yml
+PROMETHEUS_CONFIG_FILE := /tmp/prometheus-${KIND_CLUSTER_NAME}-config.yml
 KUBE_CONTEXT := kind-${KIND_CLUSTER_NAME}
 NETWORK_CIDR := ${NETWORK_PREFIX}.0.0/16
 NETWORK_GATEWAY := ${NETWORK_PREFIX}.0.1
 METALLB_DEFAULT_ADDRESS_POOL=${NETWORK_PREFIX}.255.1-${NETWORK_PREFIX}.255.254
 
-define METALLB_CONFIG_FILE_CONTENT :=
----
-## configInline specifies MetalLB's configuration directly, in yaml format. When configInline is used, Helm manages MetalLB's
-## configuration ConfigMap as part of the release, and existingConfigMap is ignored.
-## Refer to https://metallb.universe.tf/configuration/ for available options.
-configInline:
-  address-pools:
-  - name: default
-    protocol: layer2
-    addresses:
-    - $(METALLB_DEFAULT_ADDRESS_POOL)
-speaker:
-  secretValue: ${METALLB_SPEAKER_SECRET_VALUE}
-endef
-
-define METRICS_SERVER_CONFIG_FILE_CONTENT :=
----
-apiService:
-  create: true
-extraArgs:
-  kubelet-insecure-tls: true
-  kubelet-preferred-address-types: InternalIP
-endef
 
 # Make defaults
 .ONESHELL:
@@ -41,7 +19,7 @@ endef
 SHELL := /bin/bash
 
 create: ## create
-create: create-docker-network create-kind deploy-metallb deploy-metrics-server
+create: create-docker-network create-kind deploy-metallb deploy-metrics-server deploy-monitoring
 
 # KIND_EXPERIMENTAL_DOCKER_NETWORK
 create-docker-network: ## create-docker-network
@@ -68,30 +46,36 @@ create-kind:
 		--image ${KIND_CLUSTER_IMAGE}
 # -v 6
 
+# https://artifacthub.io/packages/helm/bitnami/metallb
 METALLB_REPO := bitnami
 METALLB_CHART := metallb
 METALLB_VERSION := 2.5.4 # 2.3.7 # helm search repo bitnami/metallb --output yaml| yq e '.[0].version' -
-METALLB_VALUES := $$(helm inspect values ${METALLB_REPO}/${METALLB_CHART} --version ${METALLB_VERSION})
-METALLB_CONTROLLER_IMAGE_REGISTRY := 		$$(echo "${METALLB_VALUES}" | yq e '.controller.image.registry' -)
-METALLB_CONTROLLER_IMAGE_REPOSITORY := 	$$(echo "${METALLB_VALUES}" | yq e '.controller.image.repository' -)
-METALLB_CONTROLLER_IMAGE_TAG := 				$$(echo "${METALLB_VALUES}" | yq e '.controller.image.tag' -)
-METALLB_CONTROLLER_IMAGE := "${METALLB_CONTROLLER_IMAGE_REGISTRY}/${METALLB_CONTROLLER_IMAGE_REPOSITORY}:${METALLB_CONTROLLER_IMAGE_TAG}"
-METALLB_SPEAKER_IMAGE_REGISTRY := 			$$(echo "${METALLB_VALUES}" | yq e '.speaker.image.registry' -)
-METALLB_SPEAKER_IMAGE_REPOSITORY := 		$$(echo "${METALLB_VALUES}" | yq e '.speaker.image.repository' -)
-METALLB_SPEAKER_IMAGE_TAG := 						$$(echo "${METALLB_VALUES}" | yq e '.speaker.image.tag' -)
-METALLB_SPEAKER_IMAGE := "${METALLB_SPEAKER_IMAGE_REGISTRY}/${METALLB_SPEAKER_IMAGE_REPOSITORY}:${METALLB_SPEAKER_IMAGE_TAG}"
-
-# https://hub.kubeapps.com/charts/bitnami/metallb/2.5.4
+#################################################################################################################################
+define METALLB_CONFIG_FILE_CONTENT :=
+---
+## configInline specifies MetalLB's configuration directly, in yaml format. When configInline is used, Helm manages MetalLB's
+## configuration ConfigMap as part of the release, and existingConfigMap is ignored.
+## Refer to https://metallb.universe.tf/configuration/ for available options.
+configInline:
+  address-pools:
+  - name: default
+    protocol: layer2
+    addresses:
+    - $(METALLB_DEFAULT_ADDRESS_POOL)
+speaker:
+  secretValue: ${METALLB_SPEAKER_SECRET_VALUE}
+endef
+#################################################################################################################################
 deploy-metallb: ## deploy-metallb
 deploy-metallb:
 	set -e
 	$(file > ${METALLB_CONFIG_FILE},$(METALLB_CONFIG_FILE_CONTENT))
 	helm repo add --force-update bitnami https://charts.bitnami.com/bitnami
 # kubectl get all -n metallb -oyaml|grep -Po "image: \K(\S+)"|sort|uniq
-	docker pull ${METALLB_CONTROLLER_IMAGE}
-	docker pull ${METALLB_SPEAKER_IMAGE}
-	kind load docker-image ${METALLB_CONTROLLER_IMAGE} --name ${KIND_CLUSTER_NAME}
-	kind load docker-image ${METALLB_SPEAKER_IMAGE} --name ${KIND_CLUSTER_NAME}
+	for image in $$(helm template --kube-context $(KUBE_CONTEXT) --values ${METALLB_CONFIG_FILE} --version ${METALLB_VERSION} ${METALLB_REPO}/${METALLB_CHART}|grep -Po 'image: "\K([^"]+)'|sort -u); do \
+		docker pull $$image; \
+		kind load docker-image $$image --name ${KIND_CLUSTER_NAME}
+	done
 	helm upgrade \
 		--kube-context $(KUBE_CONTEXT) \
 		--install \
@@ -100,15 +84,31 @@ deploy-metallb:
 		--namespace metallb \
 		--create-namespace \
 		--version ${METALLB_VERSION} \
-		metallb bitnami/metallb
+		${METALLB_CHART} ${METALLB_REPO}/${METALLB_CHART}
 
+# https://artifacthub.io/packages/helm/bitnami/metrics-server
+METRICS_SERVER_REPO := bitnami
+METRICS_SERVER_CHART := metrics-server
+METRICS_SERVER_VERSION := 5.8.9
+#################################################################################################################################
+define METRICS_SERVER_CONFIG_FILE_CONTENT :=
+---
+apiService:
+  create: true
+extraArgs:
+  kubelet-insecure-tls: true
+  kubelet-preferred-address-types: InternalIP
+endef
+#################################################################################################################################
 deploy-metrics-server: ## deploy-metrics-server
 deploy-metrics-server:
 	set -e
 	$(file > ${METRICS_SERVER_CONFIG_FILE},$(METRICS_SERVER_CONFIG_FILE_CONTENT))
 	helm repo add --force-update bitnami https://charts.bitnami.com/bitnami
-	docker pull docker.io/bitnami/metrics-server:0.5.0-debian-10-r0
-	kind load docker-image docker.io/bitnami/metrics-server:0.5.0-debian-10-r0 --name ${KIND_CLUSTER_NAME}
+	for image in $$(helm template --kube-context $(KUBE_CONTEXT) --values ${METRICS_SERVER_CONFIG_FILE} --version ${METRICS_SERVER_VERSION} ${METRICS_SERVER_REPO}/${METRICS_SERVER_CHART}|grep -Po 'image: "\K([^"]+)'|sort -u); do \
+		docker pull $$image; \
+		kind load docker-image $$image --name ${KIND_CLUSTER_NAME}
+	done
 	helm upgrade \
 		--kube-context $(KUBE_CONTEXT) \
 		--install \
@@ -116,8 +116,38 @@ deploy-metrics-server:
 		--values ${METRICS_SERVER_CONFIG_FILE} \
 		--namespace monitoring \
 		--create-namespace \
-		--version 5.8.9 \
-		metrics-server bitnami/metrics-server
+		--version ${METRICS_SERVER_VERSION} \
+		${METRICS_SERVER_CHART} ${METRICS_SERVER_REPO}/${METRICS_SERVER_CHART}
+
+# https://artifacthub.io/packages/helm/prometheus-community/kube-prometheus-stack
+PROMETHEUS_REPO := prometheus-community
+PROMETHEUS_CHART := kube-prometheus-stack
+PROMETHEUS_VERSION := 18.0.3 # helm search repo prometheus-community/kube-prometheus-stack --output yaml| yq e '.[0].version' -
+#################################################################################################################################
+define PROMETHEUS_CONFIG_FILE_CONTENT :=
+---
+grafana:
+  enabled: false
+endef
+#################################################################################################################################
+deploy-monitoring: ## deploy-monitoring:
+deploy-monitoring:
+	set -e
+	$(file > ${PROMETHEUS_CONFIG_FILE},$(PROMETHEUS_CONFIG_FILE_CONTENT))
+	helm repo add --force-update prometheus-community https://prometheus-community.github.io/helm-charts
+	for image in $$(helm template --kube-context $(KUBE_CONTEXT) --values ${PROMETHEUS_CONFIG_FILE} --version ${PROMETHEUS_VERSION} ${PROMETHEUS_REPO}/${PROMETHEUS_CHART}|grep -Po 'image: "\K([^"]+)'|sort -u); do \
+		docker pull $$image; \
+		kind load docker-image $$image --name ${KIND_CLUSTER_NAME}
+	done
+	helm upgrade \
+		--kube-context $(KUBE_CONTEXT) \
+		--install \
+		--wait \
+		--values ${PROMETHEUS_CONFIG_FILE} \
+		--namespace monitoring \
+		--create-namespace \
+		--version ${PROMETHEUS_VERSION} \
+		${PROMETHEUS_CHART} ${PROMETHEUS_REPO}/${PROMETHEUS_CHART}
 
 destroy: ## destroy
 destroy:
