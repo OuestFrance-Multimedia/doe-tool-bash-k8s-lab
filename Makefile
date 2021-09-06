@@ -118,6 +118,8 @@ deploy-metrics-server:
 		--create-namespace \
 		--version ${METRICS_SERVER_VERSION} \
 		${METRICS_SERVER_CHART} ${METRICS_SERVER_REPO}/${METRICS_SERVER_CHART}
+	kubectl get --context $(KUBE_CONTEXT) --raw "/apis/metrics.k8s.io/v1beta1/nodes"|yq e -P
+	kubectl get --context $(KUBE_CONTEXT) --raw "/apis/metrics.k8s.io/v1beta1/pods"|yq e -P
 
 # https://artifacthub.io/packages/helm/prometheus-community/kube-prometheus-stack
 PROMETHEUS_REPO := prometheus-community
@@ -223,7 +225,7 @@ install-kind:
 		$${GITHUB_PERSONAL_ACCESS_TOKEN:+--header 'Authorization: bearer '$$GITHUB_PERSONAL_ACCESS_TOKEN} \
 		--silent \
 		--url https://api.github.com/repos/$$repo/releases); \
-	release=$$(echo "$$releases" | jq --arg os $${os,,} --arg arch $${arch,,} --arg content_type $${content_type,,} --arg word $${word,,} 'first( .[] | select(.prerelease == false) | .assets[] | select(.name|ascii_downcase|contains($$os)) | select(.name|ascii_downcase|contains($$arch)) | select(.content_type|ascii_downcase|contains($$content_type)) | select(.name|ascii_downcase|contains($$word)) | select(.size >= 1048576) )'); \
+	release=$$(echo "$$releases" | jq --arg os $${os,,} --arg arch $${arch,,} --arg content_type $${content_type,,} --arg word $${word,,} 'first( .[] | select(.prerelease == false) | .assets[] | select(.name|ascii_downcase|contains($$os)) | select(.name|ascii_downcase|contains($$arch)) | select(.content_type|ascii_downcase|contains($$content_type)) | select(.name|ascii_downcase|contains($$word)) )'); \
 	url=$$(echo "$${release}" | jq -r '.browser_download_url'); \
 	file="/tmp/$$(basename $$url)"; \
 	echo $$file; \
@@ -270,7 +272,7 @@ install-kubectx:
 		$${GITHUB_PERSONAL_ACCESS_TOKEN:+--header 'Authorization: bearer '$$GITHUB_PERSONAL_ACCESS_TOKEN} \
 		--silent \
 		--url https://api.github.com/repos/$$repo/releases); \
-	release=$$(echo "$$releases" | jq --arg os $${os,,} --arg arch $${arch,,} --arg content_type $${content_type,,} --arg word $${word,,} 'first( .[] | select(.prerelease == false) | .assets[] | select(.name|ascii_downcase|contains($$os)) | select(.name|ascii_downcase|contains($$arch)) | select(.content_type|ascii_downcase|contains($$content_type)) | select(.name|ascii_downcase|contains($$word)) | select(.size >= 1048576) )'); \
+	release=$$(echo "$$releases" | jq --arg os $${os,,} --arg arch $${arch,,} --arg content_type $${content_type,,} --arg word $${word,,} 'first( .[] | select(.prerelease == false) | .assets[] | select(.name|ascii_downcase|contains($$os)) | select(.name|ascii_downcase|contains($$arch)) | select(.content_type|ascii_downcase|contains($$content_type)) | select(.name|ascii_downcase|contains($$word)) )'); \
 	url=$$(echo "$${release}" | jq -r '.browser_download_url'); \
 	file="/tmp/$$(basename $$url)"; \
 	echo $$url; \
@@ -301,7 +303,7 @@ install-kubens:
 		$${GITHUB_PERSONAL_ACCESS_TOKEN:+--header 'Authorization: bearer '$$GITHUB_PERSONAL_ACCESS_TOKEN} \
 		--silent \
 		--url https://api.github.com/repos/$$repo/releases); \
-	release=$$(echo "$$releases" | jq --arg os $${os,,} --arg arch $${arch,,} --arg content_type $${content_type,,} --arg word $${word,,} 'first( .[] | select(.prerelease == false) | .assets[] | select(.name|ascii_downcase|contains($$os)) | select(.name|ascii_downcase|contains($$arch)) | select(.content_type|ascii_downcase|contains($$content_type)) | select(.name|ascii_downcase|contains($$word)) | select(.size >= 1048576) )'); \
+	release=$$(echo "$$releases" | jq --arg os $${os,,} --arg arch $${arch,,} --arg content_type $${content_type,,} --arg word $${word,,} 'first( .[] | select(.prerelease == false) | .assets[] | select(.name|ascii_downcase|contains($$os)) | select(.name|ascii_downcase|contains($$arch)) | select(.content_type|ascii_downcase|contains($$content_type)) | select(.name|ascii_downcase|contains($$word)) )'); \
 	url=$$(echo "$${release}" | jq -r '.browser_download_url'); \
 	file="/tmp/$$(basename $$url)"; \
 	echo $$url; \
