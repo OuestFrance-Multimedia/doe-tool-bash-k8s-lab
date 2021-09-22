@@ -175,8 +175,8 @@ function pull_push_images () {
     return_code=$?
     set -e
     if [[ $return_code -ne 0 ]]; then
-      docker exec -it $i crictl rmi $image_id
       kind load docker-image ${DOCKER_BUILD_REPOSITORY}:${DOCKER_BUILD_TAG} --name ${KIND_CLUSTER_NAME} --nodes $i
     fi
+    # docker exec -it $i crictl rmi $image_id
   done
 }
