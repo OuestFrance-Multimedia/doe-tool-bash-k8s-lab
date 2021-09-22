@@ -157,19 +157,26 @@ function pull_push_images () {
     echo "environment var named KIND_CLUSTER_NAME is required" && exit 1
   fi
 
-  if [ -z "$KIND_NODES" ]; then
-    echo "environment var named KIND_NODES is required" && exit 1
+  if [ -z "$KIND_CLUSTER_NAME" ]; then
+    echo "environment var named KIND_CLUSTER_NAME is required" && exit 1
   fi
+
+  image_id=$(docker inspect ${DOCKER_BUILD_REPOSITORY}:${DOCKER_BUILD_TAG} --format='{{.Id}}')
+
+  KIND_NODES=$(kind get nodes --name ${KIND_CLUSTER_NAME}|grep -v control-plane)
 
   for i in $KIND_NODES
   do
     docker exec -it $i crictl images
+    set +e
+    docker exec -it $i crictl inspecti \
+      --output go-template \
+      --template '{{.status.id}}' $image_id
+    return_code=$?
+    set -e
+    if [[ $return_code -ne 0 ]]; then
+      docker exec -it $i crictl rmi $image_id
+      kind load docker-image ${DOCKER_BUILD_REPOSITORY}:${DOCKER_BUILD_TAG} --name ${KIND_CLUSTER_NAME} --nodes $i
+    fi
   done
-
-  exit 0
-
-  # docker exec -it ofi-worker crictl rmi 74ab3caa2f94f
-
-  kind load docker-image ${DOCKER_BUILD_REPOSITORY}:${DOCKER_BUILD_TAG} --name ${KIND_CLUSTER_NAME} --nodes ${KIND_NODES}
-
 }
