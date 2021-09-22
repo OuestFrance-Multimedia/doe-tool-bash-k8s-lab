@@ -5,7 +5,7 @@ function docker_build () {
 
   print_usage()
   {
-    printf "usage: devops docker_build --env-file=my-env-file"
+    printf "usage: docker_build --env-file=my-env-file"
   }
 
   env_files=()
@@ -100,5 +100,76 @@ function docker_build () {
     --compress \
     $DOCKER_BUILD_CONTEXT
 
-    docker tag $DOCKER_BUILD_REPOSITORY:$DOCKER_BUILD_TAG $DOCKER_BUILD_REPOSITORY:latest
+    # docker tag $DOCKER_BUILD_REPOSITORY:$DOCKER_BUILD_TAG $DOCKER_BUILD_REPOSITORY:latest
+}
+
+function pull_push_images () {
+  set -e
+
+  print_usage()
+  {
+    printf "usage: pull_push_images --env-file=my-env-file"
+  }
+
+  env_files=()
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --env-file*)
+        env_files+=("${1#*=}")
+        ;;
+      --help)
+        print_usage
+        exit 0
+        ;;
+      *)
+        print_usage
+        exit 1
+    esac
+    shift
+  done
+
+  if [ -z "$env_files" ]; then
+    print_usage
+    exit 1
+  fi
+
+  for i in "${env_files[@]}"
+  do
+    eval $(cat $i)
+  done
+
+  # echo "DOCKER_BUILD_REPOSITORY: $DOCKER_BUILD_REPOSITORY"
+  # echo "DOCKER_BUILD_TAG: $DOCKER_BUILD_TAG"
+  # echo "KIND_CLUSTER_NAME: $KIND_CLUSTER_NAME"
+  # echo "KIND_NODES: $KIND_NODES"
+
+  # exit 0
+
+  if [ -z "$DOCKER_BUILD_REPOSITORY" ]; then
+    echo "environment var named DOCKER_BUILD_REPOSITORY is required" && exit 1
+  fi
+
+  if [ -z "$DOCKER_BUILD_TAG" ]; then
+    echo "environment var named DOCKER_BUILD_TAG is required" && exit 1
+  fi
+
+  if [ -z "$KIND_CLUSTER_NAME" ]; then
+    echo "environment var named KIND_CLUSTER_NAME is required" && exit 1
+  fi
+
+  if [ -z "$KIND_NODES" ]; then
+    echo "environment var named KIND_NODES is required" && exit 1
+  fi
+
+  for i in $KIND_NODES
+  do
+    docker exec -it $i crictl images
+  done
+
+  exit 0
+
+  # docker exec -it ofi-worker crictl rmi 74ab3caa2f94f
+
+  kind load docker-image ${DOCKER_BUILD_REPOSITORY}:${DOCKER_BUILD_TAG} --name ${KIND_CLUSTER_NAME} --nodes ${KIND_NODES}
+
 }
