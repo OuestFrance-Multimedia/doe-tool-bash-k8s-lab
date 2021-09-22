@@ -138,13 +138,6 @@ function pull_push_images () {
     eval $(cat $i)
   done
 
-  # echo "DOCKER_BUILD_REPOSITORY: $DOCKER_BUILD_REPOSITORY"
-  # echo "DOCKER_BUILD_TAG: $DOCKER_BUILD_TAG"
-  # echo "KIND_CLUSTER_NAME: $KIND_CLUSTER_NAME"
-  # echo "KIND_NODES: $KIND_NODES"
-
-  # exit 0
-
   if [ -z "$DOCKER_BUILD_REPOSITORY" ]; then
     echo "environment var named DOCKER_BUILD_REPOSITORY is required" && exit 1
   fi
@@ -157,27 +150,32 @@ function pull_push_images () {
     echo "environment var named KIND_CLUSTER_NAME is required" && exit 1
   fi
 
-  if [ -z "$KIND_CLUSTER_NAME" ]; then
-    echo "environment var named KIND_CLUSTER_NAME is required" && exit 1
-  fi
+  IMAGE_ID=$(docker inspect ${DOCKER_BUILD_REPOSITORY}:${DOCKER_BUILD_TAG} --format='{{.Id}}')
 
-  image_id=$(docker inspect ${DOCKER_BUILD_REPOSITORY}:${DOCKER_BUILD_TAG} --format='{{.Id}}')
+  echo "KIND_CLUSTER_NAME: $KIND_CLUSTER_NAME"
+  echo "DOCKER_BUILD_REPOSITORY: $DOCKER_BUILD_REPOSITORY"
+  echo "DOCKER_BUILD_TAG: $DOCKER_BUILD_TAG"
+  echo "IMAGE_ID: $IMAGE_ID"
 
   KIND_NODES=$(kind get nodes --name ${KIND_CLUSTER_NAME}|grep -v control-plane)
-
   for i in $KIND_NODES
   do
+    docker exec -it $i ctr --namespace=k8s.io image ls
     docker exec -it $i crictl images
     set +e
     docker exec -it $i crictl inspecti \
       --output go-template \
-      --template '{{.status.id}}' $image_id
+      --template '{{.status.id}}' $IMAGE_ID
     return_code=$?
     set -e
     if [[ $return_code -ne 0 ]]; then
       kind load docker-image ${DOCKER_BUILD_REPOSITORY}:${DOCKER_BUILD_TAG} --name ${KIND_CLUSTER_NAME} --nodes $i
+    else
+      set +e
+      docker exec -it $i ctr --namespace=k8s.io images tag $IMAGE_ID ${DOCKER_BUILD_REPOSITORY}:${DOCKER_BUILD_TAG}
+      set -e
     fi
-    # docker exec -it $i crictl rmi $image_id
+    # docker exec -it $i crictl rmi $IMAGE_ID
   done
 }
 
