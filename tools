@@ -1,0 +1,104 @@
+#!/bin/bash
+
+function docker_build () {
+  set -e
+
+  print_usage()
+  {
+    printf "usage: devops docker_build --env-file=my-env-file"
+  }
+
+  env_files=()
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --env-file*)
+        env_files+=("${1#*=}")
+        ;;
+      --help)
+        print_usage
+        exit 0
+        ;;
+      *)
+        print_usage
+        exit 1
+    esac
+    shift
+  done
+
+  if [ -z "$env_files" ]; then
+    print_usage
+    exit 1
+  fi
+
+  for i in "${env_files[@]}"
+  do
+    eval $(cat $i)
+  done
+
+  if [ -z "$DOCKER_BUILD_REPOSITORY" ]; then
+    echo "environment var named DOCKER_BUILD_REPOSITORY is required" && exit 1
+  fi
+
+  if [ -z "$DOCKER_BUILD_TAG" ]; then
+    echo "environment var named DOCKER_BUILD_TAG is required" && exit 1
+  fi
+
+  if [ -z "$DOCKER_BUILD_DOCKERFILE" ]; then
+    echo "environment var named DOCKER_BUILD_DOCKERFILE is required" && exit 1
+  fi
+
+  if [ -z "$DOCKER_BUILD_CONTEXT" ]; then
+    echo "environment var named DOCKER_BUILD_CONTEXT is required" && exit 1
+  fi
+
+  DOCKER_BUILDKIT=1 docker build \
+    ${DOCKER_BUILD_TARGET:+--target=$DOCKER_BUILD_TARGET} \
+    --build-arg BUILDKIT_INLINE_CACHE=1 \
+    ${DOCKER_BUILD_ARG_01:+--build-arg $DOCKER_BUILD_ARG_01} \
+    ${DOCKER_BUILD_ARG_02:+--build-arg $DOCKER_BUILD_ARG_02} \
+    ${DOCKER_BUILD_ARG_03:+--build-arg $DOCKER_BUILD_ARG_03} \
+    ${DOCKER_BUILD_ARG_04:+--build-arg $DOCKER_BUILD_ARG_04} \
+    ${DOCKER_BUILD_ARG_05:+--build-arg $DOCKER_BUILD_ARG_05} \
+    ${DOCKER_BUILD_ARG_06:+--build-arg $DOCKER_BUILD_ARG_06} \
+    ${DOCKER_BUILD_ARG_07:+--build-arg $DOCKER_BUILD_ARG_07} \
+    ${DOCKER_BUILD_ARG_08:+--build-arg $DOCKER_BUILD_ARG_08} \
+    ${DOCKER_BUILD_ARG_09:+--build-arg $DOCKER_BUILD_ARG_09} \
+    ${DOCKER_BUILD_ARG_10:+--build-arg $DOCKER_BUILD_ARG_10} \
+    ${DOCKER_BUILD_ARG_11:+--build-arg $DOCKER_BUILD_ARG_11} \
+    ${DOCKER_BUILD_ARG_12:+--build-arg $DOCKER_BUILD_ARG_12} \
+    ${DOCKER_BUILD_ARG_13:+--build-arg $DOCKER_BUILD_ARG_13} \
+    ${DOCKER_BUILD_ARG_14:+--build-arg $DOCKER_BUILD_ARG_14} \
+    ${DOCKER_BUILD_ARG_15:+--build-arg $DOCKER_BUILD_ARG_15} \
+    ${DOCKER_BUILD_ARG_16:+--build-arg $DOCKER_BUILD_ARG_16} \
+    ${DOCKER_BUILD_ARG_17:+--build-arg $DOCKER_BUILD_ARG_17} \
+    ${DOCKER_BUILD_ARG_18:+--build-arg $DOCKER_BUILD_ARG_18} \
+    ${DOCKER_BUILD_ARG_19:+--build-arg $DOCKER_BUILD_ARG_19} \
+    ${DOCKER_BUILD_ARG_20:+--build-arg $DOCKER_BUILD_ARG_20} \
+    ${DOCKER_BUILD_SECRET_01:+--secret $DOCKER_BUILD_SECRET_01} \
+    ${DOCKER_BUILD_SECRET_02:+--secret $DOCKER_BUILD_SECRET_02} \
+    ${DOCKER_BUILD_SECRET_03:+--secret $DOCKER_BUILD_SECRET_03} \
+    ${DOCKER_BUILD_SECRET_04:+--secret $DOCKER_BUILD_SECRET_04} \
+    ${DOCKER_BUILD_SECRET_05:+--secret $DOCKER_BUILD_SECRET_05} \
+    ${DOCKER_BUILD_SECRET_06:+--secret $DOCKER_BUILD_SECRET_06} \
+    ${DOCKER_BUILD_SECRET_07:+--secret $DOCKER_BUILD_SECRET_07} \
+    ${DOCKER_BUILD_SECRET_08:+--secret $DOCKER_BUILD_SECRET_08} \
+    ${DOCKER_BUILD_SECRET_09:+--secret $DOCKER_BUILD_SECRET_09} \
+    ${DOCKER_BUILD_SECRET_10:+--secret $DOCKER_BUILD_SECRET_10} \
+    ${DOCKER_BUILD_SECRET_11:+--secret $DOCKER_BUILD_SECRET_11} \
+    ${DOCKER_BUILD_SECRET_12:+--secret $DOCKER_BUILD_SECRET_12} \
+    ${DOCKER_BUILD_SECRET_13:+--secret $DOCKER_BUILD_SECRET_13} \
+    ${DOCKER_BUILD_SECRET_14:+--secret $DOCKER_BUILD_SECRET_14} \
+    ${DOCKER_BUILD_SECRET_15:+--secret $DOCKER_BUILD_SECRET_15} \
+    ${DOCKER_BUILD_SECRET_16:+--secret $DOCKER_BUILD_SECRET_16} \
+    ${DOCKER_BUILD_SECRET_17:+--secret $DOCKER_BUILD_SECRET_17} \
+    ${DOCKER_BUILD_SECRET_18:+--secret $DOCKER_BUILD_SECRET_18} \
+    ${DOCKER_BUILD_SECRET_19:+--secret $DOCKER_BUILD_SECRET_19} \
+    ${DOCKER_BUILD_SECRET_20:+--secret $DOCKER_BUILD_SECRET_20} \
+    --cache-from $DOCKER_BUILD_REPOSITORY:latest \
+    --tag $DOCKER_BUILD_REPOSITORY:$DOCKER_BUILD_TAG \
+    --file $DOCKER_BUILD_DOCKERFILE \
+    --compress \
+    $DOCKER_BUILD_CONTEXT
+
+    docker tag $DOCKER_BUILD_REPOSITORY:$DOCKER_BUILD_TAG $DOCKER_BUILD_REPOSITORY:latest
+}
