@@ -180,3 +180,97 @@ function pull_push_images () {
     # docker exec -it $i crictl rmi $image_id
   done
 }
+
+function helm_template () {
+  set -e
+
+  print_usage()
+  {
+    printf "usage: helm_template --env-file=my-env-file"
+  }
+
+  env_files=()
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --env-file*)
+        env_files+=("${1#*=}")
+        ;;
+      --help)
+        print_usage
+        exit 0
+        ;;
+      *)
+        print_usage
+        exit 1
+    esac
+    shift
+  done
+
+  if [ -z "$env_files" ]; then
+    print_usage
+    exit 1
+  fi
+
+  for i in "${env_files[@]}"
+  do
+    eval $(cat $i)
+  done
+
+  if [ -z "$KUBE_CONTEXT" ]; then
+    echo "environment var named KUBE_CONTEXT is required" && exit 1
+  fi
+
+  if [ -z "$HELM_RELEASE_NAME" ]; then
+    echo "environment var named HELM_RELEASE_NAME is required" && exit 1
+  fi
+
+  if [ -z "$HELM_RELEASE_PATH" ]; then
+    echo "environment var named HELM_RELEASE_PATH is required" && exit 1
+  fi
+
+	helm template \
+		--kube-context $KUBE_CONTEXT \
+		--validate \
+    ${HELM_VALUES_01:+--values $HELM_VALUES_01} \
+    ${HELM_VALUES_02:+--values $HELM_VALUES_02} \
+    ${HELM_VALUES_03:+--values $HELM_VALUES_03} \
+    ${HELM_VALUES_04:+--values $HELM_VALUES_04} \
+    ${HELM_VALUES_05:+--values $HELM_VALUES_05} \
+    ${HELM_VALUES_06:+--values $HELM_VALUES_06} \
+    ${HELM_VALUES_07:+--values $HELM_VALUES_07} \
+    ${HELM_VALUES_08:+--values $HELM_VALUES_08} \
+    ${HELM_VALUES_09:+--values $HELM_VALUES_09} \
+    ${HELM_VALUES_10:+--values $HELM_VALUES_10} \
+    ${HELM_VALUES_11:+--values $HELM_VALUES_11} \
+    ${HELM_VALUES_12:+--values $HELM_VALUES_12} \
+    ${HELM_VALUES_13:+--values $HELM_VALUES_13} \
+    ${HELM_VALUES_14:+--values $HELM_VALUES_14} \
+    ${HELM_VALUES_15:+--values $HELM_VALUES_15} \
+    ${HELM_VALUES_16:+--values $HELM_VALUES_16} \
+    ${HELM_VALUES_17:+--values $HELM_VALUES_17} \
+    ${HELM_VALUES_18:+--values $HELM_VALUES_18} \
+    ${HELM_VALUES_19:+--values $HELM_VALUES_19} \
+    ${HELM_VALUES_20:+--values $HELM_VALUES_20} \
+    ${HELM_SET_01:+--set $HELM_SET_01} \
+    ${HELM_SET_02:+--set $HELM_SET_02} \
+    ${HELM_SET_03:+--set $HELM_SET_03} \
+    ${HELM_SET_04:+--set $HELM_SET_04} \
+    ${HELM_SET_05:+--set $HELM_SET_05} \
+    ${HELM_SET_06:+--set $HELM_SET_06} \
+    ${HELM_SET_07:+--set $HELM_SET_07} \
+    ${HELM_SET_08:+--set $HELM_SET_08} \
+    ${HELM_SET_09:+--set $HELM_SET_09} \
+    ${HELM_SET_10:+--set $HELM_SET_10} \
+    ${HELM_SET_11:+--set $HELM_SET_11} \
+    ${HELM_SET_12:+--set $HELM_SET_12} \
+    ${HELM_SET_13:+--set $HELM_SET_13} \
+    ${HELM_SET_14:+--set $HELM_SET_14} \
+    ${HELM_SET_15:+--set $HELM_SET_15} \
+    ${HELM_SET_16:+--set $HELM_SET_16} \
+    ${HELM_SET_17:+--set $HELM_SET_17} \
+    ${HELM_SET_18:+--set $HELM_SET_18} \
+    ${HELM_SET_19:+--set $HELM_SET_19} \
+    ${HELM_SET_20:+--set $HELM_SET_20} \
+		--name-template=${HELM_RELEASE_NAME} \
+		--dry-run --debug ${HELM_RELEASE_PATH}|yq eval -P
+}
