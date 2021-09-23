@@ -313,12 +313,12 @@ function helm_upgrade () {
     eval $(cat $i)
   done
 
-  if [ -z "$APP" ]; then
-    echo "environment var named APP is required" && exit 1
-  fi
-
   if [ -z "$KUBE_CONTEXT" ]; then
     echo "environment var named KUBE_CONTEXT is required" && exit 1
+  fi
+
+  if [ -z "$HELM_NAMESPACE" ]; then
+    echo "environment var named HELM_NAMESPACE is required" && exit 1
   fi
 
   if [ -z "$HELM_RELEASE_NAME" ]; then
@@ -335,7 +335,7 @@ function helm_upgrade () {
 		--install \
 		--wait \
 		--create-namespace \
-		--namespace ${APP} \
+		--namespace ${HELM_NAMESPACE} \
     ${HELM_VALUES_01:+--values $HELM_VALUES_01} \
     ${HELM_VALUES_02:+--values $HELM_VALUES_02} \
     ${HELM_VALUES_03:+--values $HELM_VALUES_03} \
