@@ -51,6 +51,7 @@ function docker_build () {
     echo "environment var named DOCKER_BUILD_CONTEXT is required" && exit 1
   fi
 
+  set -x
   DOCKER_BUILDKIT=1 docker build \
     ${DOCKER_BUILD_TARGET:+--target=$DOCKER_BUILD_TARGET} \
     --build-arg BUILDKIT_INLINE_CACHE=1 \
@@ -99,7 +100,7 @@ function docker_build () {
     --file $DOCKER_BUILD_DOCKERFILE \
     --compress \
     $DOCKER_BUILD_CONTEXT
-
+  set +x
     # docker tag $DOCKER_BUILD_REPOSITORY:$DOCKER_BUILD_TAG $DOCKER_BUILD_REPOSITORY:latest
 }
 
@@ -168,6 +169,7 @@ function pull_push_images () {
       --template '{{.status.id}}' $IMAGE_ID
     return_code=$?
     set -e
+    set -x
     if [[ $return_code -ne 0 ]]; then
       kind load docker-image ${DOCKER_BUILD_REPOSITORY}:${DOCKER_BUILD_TAG} --name ${KIND_CLUSTER_NAME} --nodes $i
     else
@@ -175,6 +177,7 @@ function pull_push_images () {
       docker exec -it $i ctr --namespace=k8s.io images tag $IMAGE_ID ${DOCKER_BUILD_REPOSITORY}:${DOCKER_BUILD_TAG}
       set -e
     fi
+    set +x
     # docker exec -it $i crictl rmi $IMAGE_ID
   done
 }
@@ -227,6 +230,7 @@ function helm_template () {
   fi
 
 		# --validate \
+  set -x
 	helm template \
 		--kube-context $KUBE_CONTEXT \
     ${HELM_VALUES_01:+--values $HELM_VALUES_01} \
@@ -271,6 +275,7 @@ function helm_template () {
     ${HELM_SET_20:+--set $HELM_SET_20} \
 		--name-template=${HELM_RELEASE_NAME} \
 		--dry-run --debug ${HELM_RELEASE_PATH}|yq eval -P
+  set +x
 }
 
 function helm_upgrade () {
@@ -324,6 +329,7 @@ function helm_upgrade () {
     echo "environment var named HELM_RELEASE_PATH is required" && exit 1
   fi
 
+  set -x
 	helm upgrade \
 		--kube-context $KUBE_CONTEXT \
 		--install \
@@ -372,4 +378,5 @@ function helm_upgrade () {
     ${HELM_SET_20:+--set $HELM_SET_20} \
 		${HELM_RELEASE_NAME} \
 		${HELM_RELEASE_PATH}
+  set +x
 }
