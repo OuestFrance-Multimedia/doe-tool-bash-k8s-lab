@@ -100,8 +100,8 @@ function docker_build () {
     --file $DOCKER_BUILD_DOCKERFILE \
     --compress \
     $DOCKER_BUILD_CONTEXT
+  docker tag $DOCKER_BUILD_REPOSITORY:$DOCKER_BUILD_TAG $DOCKER_BUILD_REPOSITORY:latest
   set +x
-    # docker tag $DOCKER_BUILD_REPOSITORY:$DOCKER_BUILD_TAG $DOCKER_BUILD_REPOSITORY:latest
 }
 
 function pull_push_images () {
