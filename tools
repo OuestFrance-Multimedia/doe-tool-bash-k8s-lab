@@ -198,7 +198,7 @@ function pull_push_images () {
   KIND_NODES=$(kind get nodes --name ${KIND_CLUSTER_NAME}|grep -v control-plane)
   for i in $KIND_NODES
   do
-    docker exec -it $i ctr --namespace=k8s.io image ls
+    # docker exec -it $i ctr --namespace=k8s.io image ls
     docker exec -it $i crictl images
     set +e
     docker exec -it $i crictl inspecti \
