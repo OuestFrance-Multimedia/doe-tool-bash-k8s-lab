@@ -219,6 +219,52 @@ function pull_push_images () {
   done
 }
 
+function crictl_images () {
+  set -e
+
+  print_usage()
+  {
+    printf "usage: crictl_images --env-file=my-env-file"
+  }
+
+  env_files=()
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --env-file*)
+        env_files+=("${1#*=}")
+        ;;
+      --help)
+        print_usage
+        exit 0
+        ;;
+      *)
+        print_usage
+        exit 1
+    esac
+    shift
+  done
+
+  if [ -z "$env_files" ]; then
+    print_usage
+    exit 1
+  fi
+
+  for i in "${env_files[@]}"
+  do
+    eval $(cat $i)
+  done
+
+  if [ -z "$KIND_CLUSTER_NAME" ]; then
+    echo "environment var named KIND_CLUSTER_NAME is required" && exit 1
+  fi
+
+  KIND_NODES=$(kind get nodes --name ${KIND_CLUSTER_NAME}|grep -v control-plane)
+  for i in $KIND_NODES
+  do
+    docker exec -it $i crictl images
+  done
+}
+
 function helm_template () {
   set -e
 
