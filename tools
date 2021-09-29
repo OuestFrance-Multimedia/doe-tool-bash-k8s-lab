@@ -361,7 +361,8 @@ function pull_push_images () {
     args="$args $(echo -n '--env-file='$i)"
   done
   
-  for image in $(helm_template $args|sed -rn '/\s+image:\s+"?[a-z0-9\./:-]+.*/p'|sed -r 's#\s+image:\s+"?([a-z0-9\./:-]+).*#\1#'|sort -u); do \
+  images=$(helm_template $args|sed -rn '/\s+image:\s+"?[a-zA-Z0-9\./:-]+.*/p'|sed -r 's#\s+image:\s+"?([a-zA-Z0-9\./:-]+).*#\1#'|sort -u)
+  for image in $images; do \
 		docker pull $image
     tempfile_envfile=$(mktemp /tmp/envfile.XXXXXXXXXX)
     trap "rm -Rf $tempfile_envfile" 0 2 3 15
