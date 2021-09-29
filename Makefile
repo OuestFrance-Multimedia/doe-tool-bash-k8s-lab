@@ -86,33 +86,6 @@ deploy-prometheus:
 	helm_template					--env-file=.env --env-file=prometheus.env
 	pull_push_images			--env-file=.env --env-file=prometheus.env
 	helm_upgrade					--env-file=.env --env-file=prometheus.env
-#################################################################################################################################
-# https://gitlab.com/gitlab-org/charts/gitlab/-/blob/master/charts/gitlab/values.yaml
-deploy-gitlab: ## deploy-gitlab
-deploy-gitlab:
-	set -e
-	source tools
-	helm_repo_add					--env-file=.env --env-file=gitlab.env
-	helm_get_last_version	--env-file=.env --env-file=gitlab.env
-	helm_template					--env-file=.env --env-file=gitlab.env
-	pull_push_images			--env-file=.env --env-file=gitlab.env
-	helm_upgrade					--env-file=.env --env-file=gitlab.env
-# set -e
-# $(file > ${GITLAB_CONFIG_FILE},$(GITLAB_CONFIG_FILE_CONTENT))
-# helm repo add --force-update gitlab https://charts.gitlab.io
-# for image in $$(helm template --kube-context $(KUBE_CONTEXT) --values ${GITLAB_CONFIG_FILE} --version ${GITLAB_VERSION} ${GITLAB_REPO}/${GITLAB_CHART}|grep -Po 'image: "\K([^"]+)'|sort -u); do \
-# 	docker pull $$image; \
-# 	kind load docker-image $$image --name ${KIND_CLUSTER_NAME}
-# done
-# helm upgrade \
-# 	--kube-context $(KUBE_CONTEXT) \
-# 	--install \
-# 	--wait \
-# 	--values ${GITLAB_CONFIG_FILE} \
-# 	--namespace gitlab \
-# 	--create-namespace \
-# 	--version ${GITLAB_VERSION} \
-# 	${GITLAB_CHART} ${GITLAB_REPO}/${GITLAB_CHART}
 
 destroy: ## destroy
 destroy:
