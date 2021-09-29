@@ -539,6 +539,7 @@ function helm_upgrade () {
 		--wait \
 		--create-namespace \
 		--namespace ${HELM_NAMESPACE} \
+    ${HELM_REUSE_VALUES:+--reuse-values} \
     ${HELM_VERSION:+--version $HELM_VERSION} \
     ${HELM_VALUES_01:+--values $HELM_VALUES_01} \
     ${HELM_VALUES_02:+--values $HELM_VALUES_02} \
