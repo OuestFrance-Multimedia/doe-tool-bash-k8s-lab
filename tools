@@ -141,12 +141,12 @@ function docker_build () {
   set +x
 }
 
-function pull_push_images () {
+function push_images () {
   set -e
 
   print_usage()
   {
-    printf "usage: pull_push_images --env-file=my-env-file"
+    printf "usage: push_images --env-file=my-env-file"
   }
 
   env_files=()
@@ -188,14 +188,18 @@ function pull_push_images () {
     echo "environment var named KIND_CLUSTER_NAME is required" && exit 1
   fi
 
+  if [ -z "$KIND_NODES" ]; then
+    echo "environment var named KIND_NODES is required" && exit 1
+  fi
+
   IMAGE_ID=$(docker inspect ${DOCKER_BUILD_REPOSITORY}:${DOCKER_BUILD_TAG} --format='{{.Id}}')
 
   echo "KIND_CLUSTER_NAME: $KIND_CLUSTER_NAME"
+  echo "KIND_NODES: $KIND_NODES"
   echo "DOCKER_BUILD_REPOSITORY: $DOCKER_BUILD_REPOSITORY"
   echo "DOCKER_BUILD_TAG: $DOCKER_BUILD_TAG"
   echo "IMAGE_ID: $IMAGE_ID"
 
-  KIND_NODES=$(kind get nodes --name ${KIND_CLUSTER_NAME}|grep -v control-plane)
   for i in $KIND_NODES
   do
     # docker exec -it $i ctr --namespace=k8s.io image ls
@@ -258,19 +262,22 @@ function crictl_images () {
     echo "environment var named KIND_CLUSTER_NAME is required" && exit 1
   fi
 
-  KIND_NODES=$(kind get nodes --name ${KIND_CLUSTER_NAME}|grep -v control-plane)
+  if [ -z "$KIND_NODES" ]; then
+    echo "environment var named KIND_NODES is required" && exit 1
+  fi
+
   for i in $KIND_NODES
   do
     docker exec -it $i crictl images
   done
 }
 
-function helm_template () {
+function helm_repo_add () {
   set -e
 
   print_usage()
   {
-    printf "usage: helm_template --env-file=my-env-file"
+    printf "usage: helm_repo_add --env-file=my-env-file"
   }
 
   env_files=()
@@ -300,22 +307,126 @@ function helm_template () {
     eval $(cat $i)
   done
 
+  if [ -z "$HELM_REPO_NAME" ]; then
+    echo "environment var named HELM_REPO_NAME is required" && exit 1
+  fi
+
+  if [ -z "$HELM_REPO_URL" ]; then
+    echo "environment var named HELM_REPO_URL is required" && exit 1
+  fi
+
+  set -x
+  helm repo add --force-update $HELM_REPO_NAME $HELM_REPO_URL
+  set +x
+}
+
+function pull_push_images () {
+  set -e
+
+  print_usage()
+  {
+    printf "usage: pull_push_images --env-file=my-env-file"
+  }
+
+  env_files=()
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --env-file*)
+        env_files+=("${1#*=}")
+        ;;
+      --help)
+        print_usage
+        exit 0
+        ;;
+      *)
+        print_usage
+        exit 1
+    esac
+    shift
+  done
+
+  if [ -z "$env_files" ]; then
+    print_usage
+    exit 1
+  fi
+
+  for i in "${env_files[@]}"
+  do
+    eval $(cat $i)
+  done
+
+  args=
+  for i in "${env_files[@]}"
+  do 
+    args="$args $(echo -n '--env-file='$i)"
+  done
+  
+  for image in $(helm_template $args|sed -rn '/\s+image:\s+"?[a-z0-9\./:-]+.*/p'|sed -r 's#\s+image:\s+"?([a-z0-9\./:-]+).*#\1#'|sort -u); do \
+		docker pull $image
+    tempfile_envfile=$(mktemp /tmp/envfile.XXXXXXXXXX)
+    trap "rm -Rf $tempfile_envfile" 0 2 3 15
+    echo "DOCKER_BUILD_REPOSITORY=$(echo $image|cut -d':' -f1)" >> $tempfile_envfile
+    echo "DOCKER_BUILD_TAG=$(echo $image|cut -d':' -f2)" >> $tempfile_envfile
+    push_images $args --env-file=$tempfile_envfile
+	done
+}
+
+function helm_template () {
+  set -e
+
+  print_usage()
+  {
+    printf "usage: helm_template --env-file=my-env-file"
+  }
+
+  env_files=()
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --env-file*)
+        env_files+=("${1#*=}")
+        ;;
+      --pretty-print*)
+        pretty_print=1
+        ;;
+      --help)
+        print_usage
+        exit 0
+        ;;
+      *)
+        print_usage
+        exit 1
+    esac
+    shift
+  done
+
+  if [ -z "$env_files" ]; then
+    print_usage
+    exit 1
+  fi
+
+  for i in "${env_files[@]}"
+  do
+    eval $(cat $i)
+  done
+
   if [ -z "$KUBE_CONTEXT" ]; then
     echo "environment var named KUBE_CONTEXT is required" && exit 1
   fi
 
-  if [ -z "$HELM_RELEASE_NAME" ]; then
-    echo "environment var named HELM_RELEASE_NAME is required" && exit 1
+  if [ -z "$HELM_RELEASE" ]; then
+    echo "environment var named HELM_RELEASE is required" && exit 1
   fi
 
-  if [ -z "$HELM_RELEASE_PATH" ]; then
-    echo "environment var named HELM_RELEASE_PATH is required" && exit 1
+  if [ -z "$HELM_CHART" ]; then
+    echo "environment var named HELM_CHART is required" && exit 1
   fi
 
 		# --validate \
-  set -x
-	helm template \
+  if [[ -n "$pretty_print" ]]; then set -x; fi
+  result=$(
+    helm template \
 		--kube-context $KUBE_CONTEXT \
+    ${HELM_VERSION:+--version $HELM_VERSION} \
     ${HELM_VALUES_01:+--values $HELM_VALUES_01} \
     ${HELM_VALUES_02:+--values $HELM_VALUES_02} \
     ${HELM_VALUES_03:+--values $HELM_VALUES_03} \
@@ -356,9 +467,17 @@ function helm_template () {
     ${HELM_SET_18:+--set $HELM_SET_18} \
     ${HELM_SET_19:+--set $HELM_SET_19} \
     ${HELM_SET_20:+--set $HELM_SET_20} \
-		--name-template=${HELM_RELEASE_NAME} \
-		--dry-run --debug ${HELM_RELEASE_PATH}|yq eval -P
-  set +x
+    ${pretty_print:+--dry-run} \
+    ${pretty_print:+--debug} \
+		--name-template=${HELM_RELEASE} \
+    ${HELM_CHART})
+
+  if [[ -n "$pretty_print" ]]; then 
+    echo "$result"|yq eval -P
+    set +x
+  else
+    echo "$result"
+  fi
 }
 
 function helm_upgrade () {
@@ -404,12 +523,12 @@ function helm_upgrade () {
     echo "environment var named HELM_NAMESPACE is required" && exit 1
   fi
 
-  if [ -z "$HELM_RELEASE_NAME" ]; then
-    echo "environment var named HELM_RELEASE_NAME is required" && exit 1
+  if [ -z "$HELM_RELEASE" ]; then
+    echo "environment var named HELM_RELEASE is required" && exit 1
   fi
 
-  if [ -z "$HELM_RELEASE_PATH" ]; then
-    echo "environment var named HELM_RELEASE_PATH is required" && exit 1
+  if [ -z "$HELM_CHART" ]; then
+    echo "environment var named HELM_CHART is required" && exit 1
   fi
 
   set -x
@@ -419,6 +538,7 @@ function helm_upgrade () {
 		--wait \
 		--create-namespace \
 		--namespace ${HELM_NAMESPACE} \
+    ${HELM_VERSION:+--version $HELM_VERSION} \
     ${HELM_VALUES_01:+--values $HELM_VALUES_01} \
     ${HELM_VALUES_02:+--values $HELM_VALUES_02} \
     ${HELM_VALUES_03:+--values $HELM_VALUES_03} \
@@ -459,7 +579,49 @@ function helm_upgrade () {
     ${HELM_SET_18:+--set $HELM_SET_18} \
     ${HELM_SET_19:+--set $HELM_SET_19} \
     ${HELM_SET_20:+--set $HELM_SET_20} \
-		${HELM_RELEASE_NAME} \
-		${HELM_RELEASE_PATH}
+		${HELM_RELEASE} \
+		${HELM_CHART}
   set +x
+}
+
+function helm_get_last_version () {
+  set -e
+
+  print_usage()
+  {
+    printf "usage: helm_get_last_version --env-file=my-env-file"
+  }
+
+  env_files=()
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --env-file*)
+        env_files+=("${1#*=}")
+        ;;
+      --help)
+        print_usage
+        exit 0
+        ;;
+      *)
+        print_usage
+        exit 1
+    esac
+    shift
+  done
+
+  if [ -z "$env_files" ]; then
+    print_usage
+    exit 1
+  fi
+
+  for i in "${env_files[@]}"
+  do
+    eval $(cat $i)
+  done
+
+  if [ -z "$HELM_CHART" ]; then
+    echo "environment var named HELM_CHART is required" && exit 1
+  fi
+
+  helm search repo ${HELM_CHART} --output yaml| yq e '.[0].version' -
 }
