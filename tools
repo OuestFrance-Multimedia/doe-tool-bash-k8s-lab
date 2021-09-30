@@ -62,10 +62,10 @@ function docker_build () {
     shift
   done
 
-  if [ -z "$env_files" ]; then
-    print_usage
-    exit 1
-  fi
+  # if [ -z "$env_files" ]; then
+  #   print_usage
+  #   exit 1
+  # fi
 
   for i in "${env_files[@]}"
   do
@@ -143,6 +143,7 @@ function docker_build () {
 
 function push_images () {
   set -e
+  red='\033[1;31m'; blue='\033[34m'; reset='\033[0m'
 
   print_usage()
   {
@@ -155,6 +156,12 @@ function push_images () {
       --env-file*)
         env_files+=("${1#*=}")
         ;;
+      --pretty-print)
+        pretty_print=1
+        ;;
+      --debug)
+        debug=1
+        ;;
       --help)
         print_usage
         exit 0
@@ -166,10 +173,10 @@ function push_images () {
     shift
   done
 
-  if [ -z "$env_files" ]; then
-    print_usage
-    exit 1
-  fi
+  # if [ -z "$env_files" ]; then
+  #   print_usage
+  #   exit 1
+  # fi
 
   for i in "${env_files[@]}"
   do
@@ -194,33 +201,87 @@ function push_images () {
 
   IMAGE_ID=$(docker inspect ${DOCKER_BUILD_REPOSITORY}:${DOCKER_BUILD_TAG} --format='{{.Id}}')
 
-  echo "KIND_CLUSTER_NAME: $KIND_CLUSTER_NAME"
-  echo "KIND_NODES: $KIND_NODES"
-  echo "DOCKER_BUILD_REPOSITORY: $DOCKER_BUILD_REPOSITORY"
-  echo "DOCKER_BUILD_TAG: $DOCKER_BUILD_TAG"
-  echo "IMAGE_ID: $IMAGE_ID"
+  # if [[ -n "$debug" ]]; then
+    jo \
+      KIND_CLUSTER_NAME=$KIND_CLUSTER_NAME \
+      KIND_NODES=$KIND_NODES \
+      DOCKER_BUILD_REPOSITORY=$DOCKER_BUILD_REPOSITORY \
+      DOCKER_BUILD_TAG=$DOCKER_BUILD_TAG \
+      IMAGE_ID=$IMAGE_ID|yq e -P
+    echo
+  # fi
 
   for i in $KIND_NODES
   do
     # docker exec -it $i ctr --namespace=k8s.io image ls
-    docker exec -it $i crictl images
+    command="docker exec -it $i crictl images"
+    if [[ -n "$debug" ]]; then print_info --type=command --text="$command"; fi
+    output=$(eval "$command")
+    if [[ -n "$pretty_print" ]]; then print_info --type=output --text="$output"; fi
+
+    command="docker exec -it $i crictl inspecti --output go-template --template '{{.status.id}}' $IMAGE_ID"
+    if [[ -n "$debug" ]]; then print_info --type=command --text="$command"; fi
     set +e
-    docker exec -it $i crictl inspecti \
-      --output go-template \
-      --template '{{.status.id}}' $IMAGE_ID
+    # output=$(set +e && eval "$command")
+    output=$(eval "$command")
     return_code=$?
     set -e
-    set -x
+    # if [[ -n "$pretty_print" ]]; then print_info --type=warning --text="$output"; fi
     if [[ $return_code -ne 0 ]]; then
-      kind load docker-image ${DOCKER_BUILD_REPOSITORY}:${DOCKER_BUILD_TAG} --name ${KIND_CLUSTER_NAME} --nodes $i
+      print_info --type=warning --text="no such image $IMAGE_ID present on $i"
+      command="kind load docker-image ${DOCKER_BUILD_REPOSITORY}:${DOCKER_BUILD_TAG} --name ${KIND_CLUSTER_NAME} --nodes $i"
+      if [[ -n "$debug" ]]; then print_info --type=command --text="$command"; fi
+      output=$(eval "$command")
+      if [[ -n "$pretty_print" ]]; then print_info --type=output --text="$output"; fi
     else
+      print_info --type=warning --text="image $IMAGE_ID present on $i"
+      command="docker exec -it $i ctr --namespace=k8s.io images tag $IMAGE_ID ${DOCKER_BUILD_REPOSITORY}:${DOCKER_BUILD_TAG}"
+      if [[ -n "$debug" ]]; then print_info --type=command --text="$command"; fi
       set +e
-      docker exec -it $i ctr --namespace=k8s.io images tag $IMAGE_ID ${DOCKER_BUILD_REPOSITORY}:${DOCKER_BUILD_TAG}
+      output=$(eval "$command")
+      # output=$(set +e && eval "$command")
       set -e
+      if [[ -n "$pretty_print" ]]; then print_info --type=output --text="$output"; fi
     fi
-    set +x
     # docker exec -it $i crictl rmi $IMAGE_ID
   done
+}
+
+function print_info () {
+  set -e
+  red='\033[1;31m'; blue='\033[34m'; yellow='\033[33m'; reset='\033[0m'
+
+  print_usage()
+  {
+    printf "usage: print_info --type=command --text=text"
+  }
+
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --type*)
+        type="${1#*=}"
+        ;;
+      --text*)
+        text="${1#*=}"
+        ;;
+      --help)
+        print_usage
+        exit 0
+        ;;
+      *)
+        print_usage
+        exit 1
+    esac
+    shift
+  done
+
+  if [[ $type == "command" ]]; then
+    printf "$red%s$reset\n" "$(echo $text | sed ':a;N;$!ba;s#\\\n##g')"
+  elif [[ $type == "output" ]]; then
+    printf "$blue%s$reset\n" "${text}"
+  elif [[ $type == "warning" ]]; then
+    printf "$yellow%s$reset\n" "${text}"
+  fi
 }
 
 function crictl_images () {
@@ -248,10 +309,10 @@ function crictl_images () {
     shift
   done
 
-  if [ -z "$env_files" ]; then
-    print_usage
-    exit 1
-  fi
+  # if [ -z "$env_files" ]; then
+  #   print_usage
+  #   exit 1
+  # fi
 
   for i in "${env_files[@]}"
   do
@@ -277,7 +338,7 @@ function helm_repo_add () {
 
   print_usage()
   {
-    printf "usage: helm_repo_add --env-file=my-env-file"
+    printf "usage: helm_repo_add --env-file=my-env-file --pretty-print --debug"
   }
 
   env_files=()
@@ -285,6 +346,12 @@ function helm_repo_add () {
     case "$1" in
       --env-file*)
         env_files+=("${1#*=}")
+        ;;
+      --pretty-print)
+        pretty_print=1
+        ;;
+      --debug)
+        debug=1
         ;;
       --help)
         print_usage
@@ -297,10 +364,10 @@ function helm_repo_add () {
     shift
   done
 
-  if [ -z "$env_files" ]; then
-    print_usage
-    exit 1
-  fi
+  # if [ -z "$env_files" ]; then
+  #   print_usage
+  #   exit 1
+  # fi
 
   for i in "${env_files[@]}"
   do
@@ -315,9 +382,16 @@ function helm_repo_add () {
     echo "environment var named HELM_REPO_URL is required" && exit 1
   fi
 
-  set -x
-  helm repo add --force-update $HELM_REPO_NAME $HELM_REPO_URL
-  set +x
+command=$(cat <<EOF
+    helm repo add --force-update $HELM_REPO_NAME $HELM_REPO_URL
+EOF
+)
+
+  if [[ -n "$debug" ]]; then echo -e "\e[1;31m$(echo $command | sed ':a;N;$!ba;s#\\\n##g')\e[0m"; fi
+  output=$(eval "$command")
+  if [[ -n "$pretty_print" ]]; then 
+    echo -e "\e[1;34m${output}\e[0m"; 
+  fi
 }
 
 function pull_push_images () {
@@ -325,7 +399,7 @@ function pull_push_images () {
 
   print_usage()
   {
-    printf "usage: pull_push_images --env-file=my-env-file"
+    printf "usage: pull_push_images --env-file=my-env-file --pretty-print --debug"
   }
 
   env_files=()
@@ -333,6 +407,12 @@ function pull_push_images () {
     case "$1" in
       --env-file*)
         env_files+=("${1#*=}")
+        ;;
+      --pretty-print)
+        pretty_print=1
+        ;;
+      --debug)
+        debug=1
         ;;
       --help)
         print_usage
@@ -345,10 +425,10 @@ function pull_push_images () {
     shift
   done
 
-  if [ -z "$env_files" ]; then
-    print_usage
-    exit 1
-  fi
+  # if [ -z "$env_files" ]; then
+  #   print_usage
+  #   exit 1
+  # fi
 
   for i in "${env_files[@]}"
   do
@@ -360,16 +440,21 @@ function pull_push_images () {
   do 
     args="$args $(echo -n '--env-file='$i)"
   done
-  
+
   images=$(helm_template $args|sed -rn '/\s+image:\s+"?[a-zA-Z0-9\./:-]+.*/p'|sed -r 's#\s+image:\s+"?([a-zA-Z0-9\./:-]+).*#\1#'|sort -u)
   for image in $images; do \
-		docker pull $image
+    command="docker pull $image"
+    if [[ -n "$debug" ]]; then echo -e "\e[1;31m$command\e[0m"; fi
+    echo -e "\e[1;34m"
+    docker pull $image
+    echo -e "\e[0m";
     tempfile_envfile=$(mktemp /tmp/envfile.XXXXXXXXXX)
     trap "rm -Rf $tempfile_envfile" 0 2 3 15
     echo "DOCKER_BUILD_REPOSITORY=$(echo $image|cut -d':' -f1)" >> $tempfile_envfile
     echo "DOCKER_BUILD_TAG=$(echo $image|cut -d':' -f2)" >> $tempfile_envfile
-    push_images $args --env-file=$tempfile_envfile
+    push_images $args --env-file=$tempfile_envfile ${pretty_print:+--pretty-print} ${debug:+--debug}
 	done
+
 }
 
 function helm_template () {
@@ -403,10 +488,10 @@ function helm_template () {
     shift
   done
 
-  if [ -z "$env_files" ]; then
-    print_usage
-    exit 1
-  fi
+  # if [ -z "$env_files" ]; then
+  #   print_usage
+  #   exit 1
+  # fi
 
   for i in "${env_files[@]}"
   do
@@ -485,11 +570,7 @@ EOF
   if [[ -n "$debug" ]]; then echo -e "\e[1;31m$(echo $command | sed ':a;N;$!ba;s#\\\n##g')\e[0m"; fi
   output=$(eval "$command")
 
-  if [[ -n "$pretty_print" ]]; then 
-    echo "$output"|yq eval -P
-  else
-    echo "$output"
-  fi
+  echo "$output"|yq eval -P
 }
 
 function helm_upgrade () {
@@ -520,10 +601,10 @@ function helm_upgrade () {
     shift
   done
 
-  if [ -z "$env_files" ]; then
-    print_usage
-    exit 1
-  fi
+  # if [ -z "$env_files" ]; then
+  #   print_usage
+  #   exit 1
+  # fi
 
   for i in "${env_files[@]}"
   do
@@ -620,6 +701,12 @@ function helm_get_last_version () {
       --env-file*)
         env_files+=("${1#*=}")
         ;;
+      --pretty-print)
+        pretty_print=1
+        ;;
+      --debug)
+        debug=1
+        ;;
       --help)
         print_usage
         exit 0
@@ -631,10 +718,10 @@ function helm_get_last_version () {
     shift
   done
 
-  if [ -z "$env_files" ]; then
-    print_usage
-    exit 1
-  fi
+  # if [ -z "$env_files" ]; then
+  #   print_usage
+  #   exit 1
+  # fi
 
   for i in "${env_files[@]}"
   do
@@ -645,5 +732,102 @@ function helm_get_last_version () {
     echo "environment var named HELM_CHART is required" && exit 1
   fi
 
-  helm search repo ${HELM_CHART} --output yaml| yq e '.[0].version' -
+  command="helm search repo ${HELM_CHART} --output yaml| yq e '.[0].version' -"
+  if [[ -n "$debug" ]]; then print_info --type=command --text="$command"; fi
+  output=$(eval "$command")
+  repo_name=$(echo $HELM_CHART| cut -d"/" -f1)
+  repo_chart=$(echo $HELM_CHART| cut -d"/" -f2)
+  repo_url=$(helm repo list --output json|jq -r --arg name $repo_name '.[]|select( .name == $name)|.url')
+  jo \
+    REPO=$repo_name \
+    URL=$repo_url \
+    CHART=$repo_chart \
+    LAST_VERSION=$output|yq e -P
+}
+
+function eval_env_files ()
+{
+  set -e
+  for file in "$@"
+  do
+    eval $(cat $file)
+  done
+}
+
+function deploy_helm_chart () {
+  set -e
+
+  print_usage()
+  {
+    printf "usage: deploy --env-file=my-env-file --debug"
+  }
+
+  env_files=()
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --env-file*)
+        env_files+=("${1#*=}")
+        ;;
+      --help)
+        print_usage
+        exit 0
+        ;;
+      --pretty-print)
+        pretty_print=1
+        ;;
+      --debug)
+        debug=1
+        ;;
+      --add-repo)
+        add_repo=1
+        ;;
+      --get-last-version)
+        get_last_version=1
+        ;;
+      --template)
+        template=1
+        ;;
+      --pull-push-images)
+        pull_push_images=1
+        ;;
+      --push-images)
+        push_images=1
+        ;;
+      --debug)
+        debug=1
+        ;;
+      *)
+        print_usage
+        exit 1
+    esac
+    shift
+  done
+
+  # if [ -z "$env_files" ]; then
+  #   print_usage
+  #   exit 1
+  # fi
+
+  for i in "${env_files[@]}"
+  do
+    eval $(cat $i)
+  done
+
+  if [ -n "$add_repo" ]; then
+    helm_repo_add
+  fi
+
+  if [ -n "$get_last_version" ]; then
+    helm_get_last_version
+  fi
+
+  if [ -n "$add_repo" ]; then
+	  pull_push_images
+  fi
+
+  if [ -n "$template" ]; then
+	  helm_template					${pretty_print:+--pretty-print} ${debug:+--debug}
+  fi
+
+	helm_upgrade					${debug:+--debug}
 }
