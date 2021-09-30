@@ -48,7 +48,6 @@ create-kind:
 # -v 6
 
 #################################################################################################################################
-# https://artifacthub.io/packages/helm/bitnami/metallb
 deploy-metallb: ## deploy-metallb
 deploy-metallb:
 	set -e
@@ -57,7 +56,6 @@ deploy-metallb:
 	eval_env_files .env helm-dependencies/metallb.env
 	deploy_helm_chart --pretty-print --debug --add-repo --get-last-version --template --pull-push-images
 #################################################################################################################################
-# https://artifacthub.io/packages/helm/bitnami/metrics-server
 deploy-metrics-server: ## deploy-metrics-server
 deploy-metrics-server:
 	set -e
@@ -68,7 +66,6 @@ deploy-metrics-server:
 	kubectl get --context ${KUBE_CONTEXT} --raw "/apis/metrics.k8s.io/v1beta1/nodes"|yq e -P
 	kubectl get --context ${KUBE_CONTEXT} --raw "/apis/metrics.k8s.io/v1beta1/pods"|yq e -P
 #################################################################################################################################
-# https://artifacthub.io/packages/helm/prometheus-community/kube-prometheus-stack
 deploy-kube-prometheus-stack: ## deploy-kube-prometheus-stack
 deploy-kube-prometheus-stack:
 	set -e
@@ -76,7 +73,7 @@ deploy-kube-prometheus-stack:
 	source tools
 	eval_env_files .env helm-dependencies/kube-prometheus-stack.env
 	deploy_helm_chart --pretty-print --debug --add-repo --get-last-version --template --pull-push-images
-
+#################################################################################################################################
 destroy: ## destroy
 destroy:
 	set +e
