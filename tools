@@ -422,11 +422,16 @@ function helm_template () {
     echo "environment var named HELM_CHART is required" && exit 1
   fi
 
+  if [ -z "$HELM_NAMESPACE" ]; then
+    echo "environment var named HELM_NAMESPACE is required" && exit 1
+  fi
+
 		# --validate \
   if [[ -n "$pretty_print" ]]; then set -x; fi
   result=$(
     helm template \
 		--kube-context $KUBE_CONTEXT \
+    --namespace ${HELM_NAMESPACE} \
     ${HELM_VERSION:+--version $HELM_VERSION} \
     ${HELM_VALUES_01:+--values $HELM_VALUES_01} \
     ${HELM_VALUES_02:+--values $HELM_VALUES_02} \
