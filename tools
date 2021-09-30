@@ -377,7 +377,7 @@ function helm_template () {
 
   print_usage()
   {
-    printf "usage: helm_template --env-file=my-env-file"
+    printf "usage: helm_template --env-file=my-env-file --pretty-print --debug"
   }
 
   env_files=()
@@ -386,8 +386,11 @@ function helm_template () {
       --env-file*)
         env_files+=("${1#*=}")
         ;;
-      --pretty-print*)
+      --pretty-print)
         pretty_print=1
+        ;;
+      --debug)
+        debug=1
         ;;
       --help)
         print_usage
@@ -426,9 +429,8 @@ function helm_template () {
     echo "environment var named HELM_NAMESPACE is required" && exit 1
   fi
 
-		# --validate \
-  if [[ -n "$pretty_print" ]]; then set -x; fi
-  result=$(
+  # --validate \
+  command=$(cat <<EOF
     helm template \
 		--kube-context $KUBE_CONTEXT \
     --namespace ${HELM_NAMESPACE} \
@@ -476,13 +478,17 @@ function helm_template () {
     ${pretty_print:+--dry-run} \
     ${pretty_print:+--debug} \
 		--name-template=${HELM_RELEASE} \
-    ${HELM_CHART})
+    ${HELM_CHART}
+EOF
+)
+  
+  if [[ -n "$debug" ]]; then echo -e "\e[1;31m$(echo $command | sed ':a;N;$!ba;s#\\\n##g')\e[0m"; fi
+  output=$(eval "$command")
 
   if [[ -n "$pretty_print" ]]; then 
-    echo "$result"|yq eval -P
-    set +x
+    echo "$output"|yq eval -P
   else
-    echo "$result"
+    echo "$output"
   fi
 }
 
@@ -491,7 +497,7 @@ function helm_upgrade () {
 
   print_usage()
   {
-    printf "usage: helm_upgrade --env-file=my-env-file"
+    printf "usage: helm_upgrade --env-file=my-env-file --debug"
   }
 
   env_files=()
@@ -499,6 +505,9 @@ function helm_upgrade () {
     case "$1" in
       --env-file*)
         env_files+=("${1#*=}")
+        ;;
+      --debug)
+        debug=1
         ;;
       --help)
         print_usage
@@ -537,7 +546,7 @@ function helm_upgrade () {
     echo "environment var named HELM_CHART is required" && exit 1
   fi
 
-  set -x
+  command=$(cat <<EOF
 	helm upgrade \
 		--kube-context $KUBE_CONTEXT \
 		--install \
@@ -588,7 +597,13 @@ function helm_upgrade () {
     ${HELM_SET_20:+--set $HELM_SET_20} \
 		${HELM_RELEASE} \
 		${HELM_CHART}
-  set +x
+EOF
+)
+
+  if [[ -n "$debug" ]]; then echo -e "\e[1;31m$(echo $command | sed ':a;N;$!ba;s#\\\n##g')\e[0m"; fi
+  output=$(eval "$command")
+
+  echo "$output"
 }
 
 function helm_get_last_version () {
