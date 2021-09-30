@@ -20,7 +20,7 @@ SHELL := /bin/bash
 ROOT_DIR:=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 
 create: ## create
-create: create-docker-network create-kind deploy-metallb deploy-metrics-server deploy-prometheus
+create: create-docker-network create-kind deploy-metallb deploy-metrics-server deploy-kube-prometheus-stack
 
 # KIND_EXPERIMENTAL_DOCKER_NETWORK
 create-docker-network: ## create-docker-network
@@ -54,7 +54,7 @@ deploy-metallb:
 	set -e
 	cd $(ROOT_DIR)
 	source tools
-	eval_env_files .env metallb.env
+	eval_env_files .env helm-dependencies/metallb.env
 	deploy_helm_chart --pretty-print --debug --add-repo --get-last-version --template --pull-push-images
 #################################################################################################################################
 # https://artifacthub.io/packages/helm/bitnami/metrics-server
@@ -63,18 +63,18 @@ deploy-metrics-server:
 	set -e
 	cd $(ROOT_DIR)
 	source tools
-	eval_env_files .env metrics-server.env
+	eval_env_files .env helm-dependencies/metrics-server.env
 	deploy_helm_chart --pretty-print --debug --add-repo --get-last-version --template --pull-push-images
 	kubectl get --context ${KUBE_CONTEXT} --raw "/apis/metrics.k8s.io/v1beta1/nodes"|yq e -P
 	kubectl get --context ${KUBE_CONTEXT} --raw "/apis/metrics.k8s.io/v1beta1/pods"|yq e -P
 #################################################################################################################################
 # https://artifacthub.io/packages/helm/prometheus-community/kube-prometheus-stack
-deploy-prometheus: ## deploy-prometheus
-deploy-prometheus:
+deploy-kube-prometheus-stack: ## deploy-kube-prometheus-stack
+deploy-kube-prometheus-stack:
 	set -e
 	cd $(ROOT_DIR)
 	source tools
-	eval_env_files .env prometheus.env
+	eval_env_files .env helm-dependencies/kube-prometheus-stack.env
 	deploy_helm_chart --pretty-print --debug --add-repo --get-last-version --template --pull-push-images
 
 destroy: ## destroy
