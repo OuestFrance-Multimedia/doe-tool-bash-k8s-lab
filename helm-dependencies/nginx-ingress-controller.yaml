@@ -1,0 +1,9 @@
+# https://artifacthub.io/packages/helm/bitnami/nginx-ingress-controller
+# https://github.com/bitnami/charts/blob/master/bitnami/nginx-ingress-controller/values.yaml
+---
+#fullnameOverride: nginx-ingress
+#ingressClass: prometheus-nginx
+publishService:
+  enabled: true
+service:
+  loadBalancerIP: "172.19.255.200"

@@ -22,6 +22,9 @@ ROOT_DIR:=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 create: ## create
 create: create-docker-network create-kind deploy-metallb deploy-metrics-server deploy-kube-prometheus-stack
 
+create-full-stack: # create-full-stack
+create-full-stack: create deploy-metallb deploy-nginx-ingress-controller deploy-cert-manager
+
 # KIND_EXPERIMENTAL_DOCKER_NETWORK
 create-docker-network: ## create-docker-network
 create-docker-network:
@@ -40,11 +43,14 @@ create-kind: ## create-kind
 create-kind:
 	set -e
 #	$(file > ${KIND_CONFIG_FILE},${KIND_CONFIG_FILE_CONTENT})
-	export KIND_EXPERIMENTAL_DOCKER_NETWORK=${KIND_CLUSTER_NAME}
-	kind create cluster \
-		--name ${KIND_CLUSTER_NAME} \
-		--config ${KIND_CONFIG_FILE} \
-		--image ${KIND_CLUSTER_IMAGE}
+	if [[ -z "$$(kind get clusters|sed -rn '/^'${KIND_CLUSTER_NAME}'$$/p')" ]]; then \
+		export KIND_EXPERIMENTAL_DOCKER_NETWORK=${KIND_CLUSTER_NAME}
+		kind create cluster \
+			--name ${KIND_CLUSTER_NAME} \
+			--config ${KIND_CONFIG_FILE} \
+			--image ${KIND_CLUSTER_IMAGE}; \
+	fi; \
+
 # -v 6
 
 #################################################################################################################################
@@ -80,6 +86,14 @@ deploy-cert-manager:
 	cd $(ROOT_DIR)
 	source tools
 	eval_env_files .env helm-dependencies/cert-manager.env
+	deploy_helm_chart --pretty-print --debug --add-repo --get-last-version --template --pull-push-images
+#################################################################################################################################
+deploy-nginx-ingress-controller: ## deploy-nginx-ingress-controller
+deploy-nginx-ingress-controller:
+	set -e
+	cd $(ROOT_DIR)
+	source tools
+	eval_env_files .env helm-dependencies/nginx-ingress-controller.env
 	deploy_helm_chart --pretty-print --debug --add-repo --get-last-version --template --pull-push-images
 #################################################################################################################################
 destroy: ## destroy
