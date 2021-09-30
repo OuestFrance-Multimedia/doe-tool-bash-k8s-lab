@@ -204,7 +204,7 @@ function push_images () {
   # if [[ -n "$debug" ]]; then
     jo \
       KIND_CLUSTER_NAME=$KIND_CLUSTER_NAME \
-      KIND_NODES=$KIND_NODES \
+      KIND_NODES="$KIND_NODES" \
       DOCKER_BUILD_REPOSITORY=$DOCKER_BUILD_REPOSITORY \
       DOCKER_BUILD_TAG=$DOCKER_BUILD_TAG \
       IMAGE_ID=$IMAGE_ID|yq e -P
