@@ -54,11 +54,8 @@ deploy-metallb:
 	set -e
 	cd $(ROOT_DIR)
 	source tools
-	helm_repo_add					--env-file=.env --env-file=metallb.env
-	helm_get_last_version	--env-file=.env --env-file=metallb.env
-	helm_template					--env-file=.env --env-file=metallb.env
-	pull_push_images			--env-file=.env --env-file=metallb.env
-	helm_upgrade					--env-file=.env --env-file=metallb.env
+	eval_env_files .env metallb.env
+	deploy_helm_chart --pretty-print --debug --add-repo --get-last-version --template --pull-push-images
 #################################################################################################################################
 # https://artifacthub.io/packages/helm/bitnami/metrics-server
 deploy-metrics-server: ## deploy-metrics-server
@@ -66,12 +63,8 @@ deploy-metrics-server:
 	set -e
 	cd $(ROOT_DIR)
 	source tools
-	helm_repo_add					--env-file=.env --env-file=metrics-server.env
-	helm_get_last_version	--env-file=.env --env-file=metrics-server.env
-	helm_template					--env-file=.env --env-file=metrics-server.env
-	pull_push_images			--env-file=.env --env-file=metrics-server.env
-	helm_upgrade					--env-file=.env --env-file=metrics-server.env
-	eval $$(cat .env)
+	eval_env_files .env metrics-server.env
+	deploy_helm_chart --pretty-print --debug --add-repo --get-last-version --template --pull-push-images
 	kubectl get --context ${KUBE_CONTEXT} --raw "/apis/metrics.k8s.io/v1beta1/nodes"|yq e -P
 	kubectl get --context ${KUBE_CONTEXT} --raw "/apis/metrics.k8s.io/v1beta1/pods"|yq e -P
 #################################################################################################################################
@@ -81,11 +74,8 @@ deploy-prometheus:
 	set -e
 	cd $(ROOT_DIR)
 	source tools
-	helm_repo_add					--env-file=.env --env-file=prometheus.env
-	helm_get_last_version	--env-file=.env --env-file=prometheus.env
-	helm_template					--env-file=.env --env-file=prometheus.env
-	pull_push_images			--env-file=.env --env-file=prometheus.env
-	helm_upgrade					--env-file=.env --env-file=prometheus.env
+	eval_env_files .env prometheus.env
+	deploy_helm_chart --pretty-print --debug --add-repo --get-last-version --template --pull-push-images
 
 destroy: ## destroy
 destroy:
