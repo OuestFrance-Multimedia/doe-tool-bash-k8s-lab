@@ -96,6 +96,15 @@ deploy-nginx-ingress-controller:
 	eval_env_files .env helm-dependencies/nginx-ingress-controller.env
 	deploy_helm_chart --pretty-print --debug --add-repo --get-last-version --template --pull-push-images
 #################################################################################################################################
+deploy-argocd: ## deploy-argocd
+deploy-argocd:
+	set -e
+	cd $(ROOT_DIR)
+	source tools
+	eval_env_files .env helm-dependencies/argocd.env
+#	set +e; kubectl apply --context $${KUBE_CONTEXT} --namespace=$${HELM_NAMESPACE} -f helm-dependencies/cert-manager.Certificate.yaml ; set -e
+	deploy_helm_chart --pretty-print --debug --add-repo --get-last-version --template --pull-push-images
+#################################################################################################################################
 destroy: ## destroy
 destroy:
 	set +e

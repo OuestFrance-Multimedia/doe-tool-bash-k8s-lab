@@ -1,0 +1,15 @@
+# https://artifacthub.io/packages/helm/argo/argo-cd
+# https://github.com/argoproj/argo-helm/blob/master/charts/argo-cd/values.yaml
+---
+server:
+  extraArgs:
+  - --insecure
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    hosts:
+    - argocd.kind.lan
+    tls:
+      - secretName: argocd-tls-certificate
+        hosts:
+          - argocd.kind.lan
