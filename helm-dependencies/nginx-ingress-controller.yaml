@@ -5,5 +5,3 @@
 #ingressClass: prometheus-nginx
 publishService:
   enabled: true
-service:
-  loadBalancerIP: "172.19.255.200"
