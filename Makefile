@@ -74,6 +74,14 @@ deploy-kube-prometheus-stack:
 	eval_env_files .env helm-dependencies/kube-prometheus-stack.env
 	deploy_helm_chart --pretty-print --debug --add-repo --get-last-version --template --pull-push-images
 #################################################################################################################################
+deploy-cert-manager: ## deploy-cert-manager
+deploy-cert-manager:
+	set -e
+	cd $(ROOT_DIR)
+	source tools
+	eval_env_files .env helm-dependencies/cert-manager.env
+	deploy_helm_chart --pretty-print --debug --add-repo --get-last-version --template --pull-push-images
+#################################################################################################################################
 destroy: ## destroy
 destroy:
 	set +e

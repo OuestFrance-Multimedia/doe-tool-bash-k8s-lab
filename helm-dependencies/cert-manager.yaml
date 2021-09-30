@@ -1,0 +1,6 @@
+# https://artifacthub.io/packages/helm/bitnami/cert-manager
+# https://github.com/bitnami/charts/blob/master/bitnami/cert-manager/values.yaml
+# https://cert-manager.io/docs/installation/helm/
+# https://tech.paulcz.net/blog/creating-self-signed-certs-on-kubernetes/
+---
+installCRDs: true
