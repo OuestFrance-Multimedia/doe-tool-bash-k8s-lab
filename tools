@@ -713,7 +713,6 @@ function pull_push_images () {
     args="$args $(echo -n '--env-file='$i)"
   done
 
-  echo "ici"
   images=$(helm_template $args|sed -rn '/\s+image:\s+"?[a-zA-Z0-9\./:-]+.*/p'|sed -r 's#\s+image:\s+"?([a-zA-Z0-9\./:-]+).*#\1#'|sort -u)
   for image in $images; do \
     command="docker pull $image"
