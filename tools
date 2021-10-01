@@ -41,7 +41,7 @@ function create_docker_network () {
   done
 
   if [ -z "$KIND_CLUSTER_NAME" ]; then
-    echo "environment var named KIND_CLUSTER_NAME is required" && exit 1
+    echo "${FUNCNAME[0]} - environment var named KIND_CLUSTER_NAME is required" && exit 1
   fi
 
   if [ -z "$NETWORK_PREFIX" ]; then
@@ -114,7 +114,7 @@ function create_kind () {
   done
 
   if [ -z "$KIND_CLUSTER_NAME" ]; then
-    echo "environment var named KIND_CLUSTER_NAME is required" && exit 1
+    echo "${FUNCNAME[0]} - environment var named KIND_CLUSTER_NAME is required" && exit 1
   fi
 
   if [ -z "$KIND_CLUSTER_IMAGE" ]; then
@@ -150,19 +150,31 @@ EOF
 function start_cluster () {
   set -e
   if [ -z "$KIND_CLUSTER_NAME" ]; then
-    echo "environment var named KIND_CLUSTER_NAME is required" && exit 1
+    echo "${FUNCNAME[0]} - environment var named KIND_CLUSTER_NAME is required" && exit 1
   fi
-  nodes=$(kind get nodes --name ${KIND_CLUSTER_NAME}|tr '\n' ' '|sed 's/,$//')
-  sh -c "docker start $nodes"
+  #setopt shwordsplit 
+  nodes=$(kind get nodes --name ${KIND_CLUSTER_NAME})
+  for node in $nodes; do
+    if ! docker ps --format '{{.Names}}' | grep -w $node &> /dev/null; then
+      sh -c "docker start $node" &> /dev/null
+    fi
+  done
+  #unsetopt shwordsplit
 }
 
 function stop_cluster () {
   set -e
   if [ -z "$KIND_CLUSTER_NAME" ]; then
-    echo "environment var named KIND_CLUSTER_NAME is required" && exit 1
+    echo "${FUNCNAME[0]} - environment var named KIND_CLUSTER_NAME is required" && exit 1
   fi
-  nodes=$(kind get nodes --name ${KIND_CLUSTER_NAME}|tr '\n' ' '|sed 's/,$//')
-  sh -c "docker stop $nodes"
+  #setopt shwordsplit 
+  nodes=$(kind get nodes --name ${KIND_CLUSTER_NAME})
+  for node in $nodes; do
+    if docker ps --format '{{.Names}}' | grep -w $node &> /dev/null; then
+      sh -c "docker stop $node" &> /dev/null
+    fi
+  done
+  #unsetopt shwordsplit
 }
 
 function wait_cluster () {
@@ -201,7 +213,7 @@ function wait_cluster () {
 
   set -e
   if [ -z "$KIND_CLUSTER_NAME" ]; then
-    echo "environment var named KIND_CLUSTER_NAME is required" && exit 1
+    echo "${FUNCNAME[0]} - environment var named KIND_CLUSTER_NAME is required" && exit 1
   fi
 
   if [ -z "$KUBE_CONTEXT" ]; then
@@ -453,7 +465,7 @@ function push_images () {
   fi
 
   if [ -z "$KIND_CLUSTER_NAME" ]; then
-    echo "environment var named KIND_CLUSTER_NAME is required" && exit 1
+    echo "${FUNCNAME[0]} - environment var named KIND_CLUSTER_NAME is required" && exit 1
   fi
 
   if [ -z "$KIND_NODES" ]; then
@@ -590,7 +602,7 @@ function crictl_images () {
   done
 
   if [ -z "$KIND_CLUSTER_NAME" ]; then
-    echo "environment var named KIND_CLUSTER_NAME is required" && exit 1
+    echo "${FUNCNAME[0]} - environment var named KIND_CLUSTER_NAME is required" && exit 1
   fi
 
   if [ -z "$KIND_NODES" ]; then
@@ -1032,6 +1044,7 @@ function eval_env_files ()
     eval $(cat $file)
     if [[ -n "$(sed -rn '/^KIND_CLUSTER_NAME=/p' $file)" ]]; then
       print_info --type=warning --text="eval_env_files - wait kind cluster ${KIND_CLUSTER_NAME} start ..."
+      # print_info --type=warning --text="$(cat $file)"
       wait_cluster
     fi
   done
