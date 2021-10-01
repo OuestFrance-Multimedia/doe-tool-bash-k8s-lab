@@ -211,8 +211,8 @@ function wait_cluster () {
   cluster=$(kind get clusters 2>/dev/null|sed -rn '/^'${KIND_CLUSTER_NAME}'$/p')
   until [[ -n $cluster ]]
   do
-    cluster=$(kind get clusters 2>/dev/null|sed -rn '/^'${KIND_CLUSTER_NAME}'$/p')
     sleep $(shuf -i 5-10 -n 1)
+    cluster=$(kind get clusters 2>/dev/null|sed -rn '/^'${KIND_CLUSTER_NAME}'$/p')
   done
 
   start_cluster
@@ -225,7 +225,17 @@ function wait_cluster () {
     done
   done
   # kind export kubeconfig --name $KIND_CLUSTER_NAME
-  kubectl get nodes --context ${KUBE_CONTEXT}
+
+  set +e
+  kubectl get nodes --context ${KUBE_CONTEXT} 2>/dev/null
+  return_code=$?
+  until [[ $return_code -eq 0 ]]
+  do
+    sleep $(shuf -i 5-10 -n 1)
+    kubectl get nodes --context ${KUBE_CONTEXT} 2>/dev/null
+    return_code=$?
+  done
+  set -e
 
   until [[ -n $cluster_ready ]]
   do
