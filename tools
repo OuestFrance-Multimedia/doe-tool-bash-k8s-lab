@@ -214,7 +214,7 @@ function push_images () {
   for i in $KIND_NODES
   do
     # docker exec -it $i ctr --namespace=k8s.io image ls
-    command="docker exec -it $i crictl images"
+    command='images=$(docker exec -it devops-control-plane crictl image --no-trunc); echo "$images"|sed -n 1p; echo "$images"|sed -n "/^${DOCKER_BUILD_REPOSITORY//\//\\/}\s/p"'
     if [[ -n "$debug" ]]; then print_info --type=command --text="$command"; fi
     output=$(eval "$command")
     if [[ -n "$pretty_print" ]]; then print_info --type=output --text="$output"; fi
@@ -276,11 +276,11 @@ function print_info () {
   done
 
   if [[ $type == "command" ]]; then
-    printf "$red%s$reset\n" "$(echo $text | sed ':a;N;$!ba;s#\\\n##g')"
+    printf "$red%s$reset\n\n" "$(echo $text | sed ':a;N;$!ba;s#\\\n##g')"
   elif [[ $type == "output" ]]; then
-    printf "$blue%s$reset\n" "${text}"
+    printf "$blue%s$reset\n\n" "${text}"
   elif [[ $type == "warning" ]]; then
-    printf "$yellow%s$reset\n" "${text}"
+    printf "$yellow%s$reset\n\n" "${text}"
   fi
 }
 
@@ -387,11 +387,9 @@ command=$(cat <<EOF
 EOF
 )
 
-  if [[ -n "$debug" ]]; then echo -e "\e[1;31m$(echo $command | sed ':a;N;$!ba;s#\\\n##g')\e[0m"; fi
+  if [[ -n "$debug" ]]; then print_info --type=command --text="$command"; fi
   output=$(eval "$command")
-  if [[ -n "$pretty_print" ]]; then 
-    echo -e "\e[1;34m${output}\e[0m"; 
-  fi
+  if [[ -n "$pretty_print" ]]; then print_info --type=output --text="$output"; fi
 }
 
 function pull_push_images () {
@@ -821,7 +819,7 @@ function deploy_helm_chart () {
     helm_get_last_version
   fi
 
-  if [ -n "$add_repo" ]; then
+  if [ -n "$pull_push_images" ]; then
 	  pull_push_images
   fi
 
