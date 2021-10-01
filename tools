@@ -1,5 +1,248 @@
 #!/bin/bash
 
+function create_docker_network () {
+	set -e
+  print_usage()
+  {
+    printf "usage: create_docker_network --env-file=my-env-file --pretty-print --debug"
+  }
+
+  env_files=()
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --env-file*)
+        env_files+=("${1#*=}")
+        ;;
+      --pretty-print)
+        pretty_print=1
+        ;;
+      --debug)
+        debug=1
+        ;;
+      --help)
+        print_usage
+        exit 0
+        ;;
+      *)
+        print_usage
+        exit 1
+    esac
+    shift
+  done
+
+  # if [ -z "$env_files" ]; then
+  #   print_usage
+  #   exit 1
+  # fi
+
+  for i in "${env_files[@]}"
+  do
+    eval $(cat $i)
+  done
+
+  if [ -z "$KIND_CLUSTER_NAME" ]; then
+    echo "environment var named KIND_CLUSTER_NAME is required" && exit 1
+  fi
+
+  if [ -z "$NETWORK_PREFIX" ]; then
+    echo "environment var named NETWORK_PREFIX is required" && exit 1
+  fi
+
+  if [ -z "$NETWORK_CIDR" ]; then
+    NETWORK_CIDR=${NETWORK_PREFIX}.0.0/16
+  fi
+
+  if [ -z "$NETWORK_GATEWAY" ]; then
+    NETWORK_GATEWAY=${NETWORK_PREFIX}.0.1
+  fi
+
+	if [[ -z "$(docker network ls --filter "name=^${KIND_CLUSTER_NAME}$" -q)" ]]; then
+    # sleep 20
+    command=$(cat <<EOF
+		docker network create \
+			--scope local \
+			--driver bridge \
+			--subnet ${NETWORK_CIDR} \
+			--gateway $NETWORK_GATEWAY \
+			$KIND_CLUSTER_NAME
+EOF
+)
+    if [[ -n "$debug" ]]; then print_info --type=command --text="$command"; fi
+    output=$(eval "$command")
+    if [[ -n "$pretty_print" ]]; then print_info --type=output --text="$output"; fi
+	fi
+}
+
+function create_kind () {
+	set -e
+  print_usage()
+  {
+    printf "usage: create_kind --env-file=my-env-file --pretty-print --debug"
+  }
+
+  env_files=()
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --env-file*)
+        env_files+=("${1#*=}")
+        ;;
+      --pretty-print)
+        pretty_print=1
+        ;;
+      --debug)
+        debug=1
+        ;;
+      --help)
+        print_usage
+        exit 0
+        ;;
+      *)
+        print_usage
+        exit 1
+    esac
+    shift
+  done
+
+  # if [ -z "$env_files" ]; then
+  #   print_usage
+  #   exit 1
+  # fi
+
+  for i in "${env_files[@]}"
+  do
+    eval $(cat $i)
+  done
+
+  if [ -z "$KIND_CLUSTER_NAME" ]; then
+    echo "environment var named KIND_CLUSTER_NAME is required" && exit 1
+  fi
+
+  if [ -z "$KIND_CLUSTER_IMAGE" ]; then
+    echo "environment var named KIND_CLUSTER_IMAGE is required" && exit 1
+  fi
+
+  if [ -z "$KIND_CONFIG_FILE" ]; then
+    KIND_CONFIG_FILE=kind-config.yaml
+  fi
+
+  echo "wait docker network ${KIND_CLUSTER_NAME} start ..."
+  until [[ -n $KIND_EXPERIMENTAL_DOCKER_NETWORK ]]
+  do
+    KIND_EXPERIMENTAL_DOCKER_NETWORK=$(docker network ls --filter "name=^${KIND_CLUSTER_NAME}$" -q --format '{{ .Name }}')
+    sleep 2
+  done
+
+	if [[ -z "$(kind get clusters|sed -rn '/^'${KIND_CLUSTER_NAME}'$/p')" ]]; then
+    command=$(cat <<EOF
+		kind create cluster \
+			--name ${KIND_CLUSTER_NAME} \
+			--config ${KIND_CONFIG_FILE} \
+			--image ${KIND_CLUSTER_IMAGE}
+EOF
+)
+    if [[ -n "$debug" ]]; then print_info --type=command --text="$command"; fi
+    output=$(eval "$command")
+    if [[ -n "$pretty_print" ]]; then print_info --type=output --text="$output"; fi
+	fi
+}
+
+
+function start_cluster () {
+  set -e
+  if [ -z "$KIND_CLUSTER_NAME" ]; then
+    echo "environment var named KIND_CLUSTER_NAME is required" && exit 1
+  fi
+  nodes=$(kind get nodes --name ${KIND_CLUSTER_NAME}|tr '\n' ' '|sed 's/,$//')
+  sh -c "docker start $nodes"
+}
+
+function stop_cluster () {
+  set -e
+  if [ -z "$KIND_CLUSTER_NAME" ]; then
+    echo "environment var named KIND_CLUSTER_NAME is required" && exit 1
+  fi
+  nodes=$(kind get nodes --name ${KIND_CLUSTER_NAME}|tr '\n' ' '|sed 's/,$//')
+  sh -c "docker stop $nodes"
+}
+
+function wait_cluster () {
+	set -e
+  print_usage()
+  {
+    printf "usage: wait_cluster --env-file=my-env-file"
+  }
+
+  env_files=()
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --env-file*)
+        env_files+=("${1#*=}")
+        ;;
+      --help)
+        print_usage
+        exit 0
+        ;;
+      *)
+        print_usage
+        exit 1
+    esac
+    shift
+  done
+
+  # if [ -z "$env_files" ]; then
+  #   print_usage
+  #   exit 1
+  # fi
+
+  for i in "${env_files[@]}"
+  do
+    eval $(cat $i)
+  done
+
+  set -e
+  if [ -z "$KIND_CLUSTER_NAME" ]; then
+    echo "environment var named KIND_CLUSTER_NAME is required" && exit 1
+  fi
+
+  if [ -z "$KUBE_CONTEXT" ]; then
+    echo "environment var named KUBE_CONTEXT is required" && exit 1
+  fi
+
+  cluster=$(kind get clusters|sed -rn '/^'${KIND_CLUSTER_NAME}'$/p')
+  until [[ -n $cluster ]]
+  do
+    cluster=$(kind get clusters|sed -rn '/^'${KIND_CLUSTER_NAME}'$/p')
+    sleep $(shuf -i 5-10 -n 1)
+  done
+
+  # start_cluster
+  controls_planes=$(kind get nodes --name ${KIND_CLUSTER_NAME}|sed -rn '/-control-plane$/p'|tr '\n' ' '|sed 's/,$//')
+  for control_plane in $controls_planes; do
+    HostPort=$(docker inspect $control_plane|jq -r '.[].NetworkSettings.Ports["6443/tcp"][0].HostPort')
+    HostIp=$(docker inspect $control_plane|jq -r '.[].NetworkSettings.Ports["6443/tcp"][0].HostIp')
+    while ! timeout 1 bash -c "echo > /dev/tcp/$HostIp/$HostPort"; do   
+      sleep $(shuf -i 1-5 -n 1) # wait for 1-5 seconds before check again
+    done
+  done
+  # kind export kubeconfig --name $KIND_CLUSTER_NAME
+  kubectl get nodes --context ${KUBE_CONTEXT}
+
+  until [[ -n $cluster_ready ]]
+  do
+    status=$(kubectl get nodes --context ${KUBE_CONTEXT} -o jsonpath='{..status.conditions[?(@.type=="Ready")].status}')
+    error=0
+    for s in $status; do
+      if [[ "$s" != "True" ]]; then
+        error=1
+      fi
+    done
+    if [[ "$error" == "0" ]]; then
+      cluster_ready=1
+    else
+      sleep $(shuf -i 5-10 -n 1)
+    fi
+  done
+}
 
 function submodule_update () {
   set -e
@@ -70,6 +313,10 @@ function docker_build () {
   for i in "${env_files[@]}"
   do
     eval $(cat $i)
+    if [[ -n "$(sed -rn '/^KIND_CLUSTER_NAME=/p' $i)" ]]; then
+      echo "wait kind cluster ${KIND_CLUSTER_NAME} start ..."
+      wait_cluster
+    fi
   done
 
   if [ -z "$DOCKER_BUILD_REPOSITORY" ]; then
@@ -181,6 +428,10 @@ function push_images () {
   for i in "${env_files[@]}"
   do
     eval $(cat $i)
+    if [[ -n "$(sed -rn '/^KIND_CLUSTER_NAME=/p' $i)" ]]; then
+      echo "wait kind cluster ${KIND_CLUSTER_NAME} start ..."
+      wait_cluster
+    fi
   done
 
   if [ -z "$DOCKER_BUILD_REPOSITORY" ]; then
@@ -230,6 +481,11 @@ function push_images () {
     if [[ $return_code -ne 0 ]]; then
       print_info --type=warning --text="no such image $IMAGE_ID present on $i"
       command="kind load docker-image ${DOCKER_BUILD_REPOSITORY}:${DOCKER_BUILD_TAG} --name ${KIND_CLUSTER_NAME} --nodes $i"
+      if [[ -n "$debug" ]]; then print_info --type=command --text="$command"; fi
+      output=$(eval "$command")
+      if [[ -n "$pretty_print" ]]; then print_info --type=output --text="$output"; fi
+
+      command='images=$(docker exec -it $i crictl image --no-trunc); echo "$images"|sed -n 1p; echo "$images"|sed -n "/^${DOCKER_BUILD_REPOSITORY//\//\\/}\s/p"'
       if [[ -n "$debug" ]]; then print_info --type=command --text="$command"; fi
       output=$(eval "$command")
       if [[ -n "$pretty_print" ]]; then print_info --type=output --text="$output"; fi
@@ -317,6 +573,10 @@ function crictl_images () {
   for i in "${env_files[@]}"
   do
     eval $(cat $i)
+    if [[ -n "$(sed -rn '/^KIND_CLUSTER_NAME=/p' $i)" ]]; then
+      echo "wait kind cluster ${KIND_CLUSTER_NAME} start ..."
+      wait_cluster
+    fi
   done
 
   if [ -z "$KIND_CLUSTER_NAME" ]; then
@@ -431,6 +691,10 @@ function pull_push_images () {
   for i in "${env_files[@]}"
   do
     eval $(cat $i)
+    if [[ -n "$(sed -rn '/^KIND_CLUSTER_NAME=/p' $i)" ]]; then
+      echo "wait kind cluster ${KIND_CLUSTER_NAME} start ..."
+      wait_cluster
+    fi
   done
 
   args=
@@ -494,6 +758,10 @@ function helm_template () {
   for i in "${env_files[@]}"
   do
     eval $(cat $i)
+    if [[ -n "$(sed -rn '/^KIND_CLUSTER_NAME=/p' $i)" ]]; then
+      echo "wait kind cluster ${KIND_CLUSTER_NAME} start ..."
+      wait_cluster
+    fi
   done
 
   if [ -z "$KUBE_CONTEXT" ]; then
@@ -607,6 +875,10 @@ function helm_upgrade () {
   for i in "${env_files[@]}"
   do
     eval $(cat $i)
+    if [[ -n "$(sed -rn '/^KIND_CLUSTER_NAME=/p' $i)" ]]; then
+      echo "wait kind cluster ${KIND_CLUSTER_NAME} start ..."
+      wait_cluster
+    fi
   done
 
   if [ -z "$KUBE_CONTEXT" ]; then
@@ -629,7 +901,8 @@ function helm_upgrade () {
 	helm upgrade \
 		--kube-context $KUBE_CONTEXT \
 		--install \
-		--wait \
+    ${HELM_WAIT:+--wait} \
+    ${HELM_TIMEOUT:+--timeout $HELM_TIMEOUT} \
 		--create-namespace \
 		--namespace ${HELM_NAMESPACE} \
     ${HELM_REUSE_VALUES:+--reuse-values} \
@@ -749,6 +1022,10 @@ function eval_env_files ()
   for file in "$@"
   do
     eval $(cat $file)
+    if [[ -n "$(sed -rn '/^KIND_CLUSTER_NAME=/p' $file)" ]]; then
+      echo "wait kind cluster ${KIND_CLUSTER_NAME} start ..."
+      wait_cluster
+    fi
   done
 }
 
@@ -809,6 +1086,10 @@ function deploy_helm_chart () {
   for i in "${env_files[@]}"
   do
     eval $(cat $i)
+    if [[ -n "$(sed -rn '/^KIND_CLUSTER_NAME=/p' $i)" ]]; then
+      echo "wait kind cluster ${KIND_CLUSTER_NAME} start ..."
+      wait_cluster
+    fi
   done
 
   if [ -n "$add_repo" ]; then

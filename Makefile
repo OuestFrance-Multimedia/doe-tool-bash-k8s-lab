@@ -19,8 +19,17 @@ NETWORK_GATEWAY := ${NETWORK_PREFIX}.0.1
 SHELL := /bin/bash
 ROOT_DIR:=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 
+# MAKEFLAGS := --jobs=$(shell nproc)
+# MAKEFLAGS += --output-sync=target
+
 create: ## create
 create: create-docker-network create-kind deploy-metallb deploy-metrics-server deploy-kube-prometheus-stack
+#create-docker-network create-kind deploy-metallb deploy-metrics-server deploy-kube-prometheus-stack
+
+# create-kind deploy-small-stack
+
+deploy-small-stack: # deploy-small-stack
+deploy-small-stack: deploy-metallb deploy-metrics-server deploy-kube-prometheus-stack
 
 create-full-stack: # create-full-stack
 create-full-stack: create deploy-metallb deploy-nginx-ingress-controller deploy-cert-manager
@@ -29,27 +38,27 @@ create-full-stack: create deploy-metallb deploy-nginx-ingress-controller deploy-
 create-docker-network: ## create-docker-network
 create-docker-network:
 	set -e
-	if [[ -z "$$(docker network ls --filter "name=^${KIND_CLUSTER_NAME}$$" -q)" ]]; then \
-		docker network create \
-			--scope local \
-			--driver bridge \
-			--subnet $(NETWORK_CIDR) \
-			--gateway $(NETWORK_GATEWAY) \
-			$(KIND_CLUSTER_NAME); \
-	fi; \
+	cd $(ROOT_DIR)
+	source tools
+	create_docker_network --env-file=.env --pretty-print --debug
 
 # # https://kind.sigs.k8s.io/docs/user/configuration/
 create-kind: ## create-kind
 create-kind:
 	set -e
-#	$(file > ${KIND_CONFIG_FILE},${KIND_CONFIG_FILE_CONTENT})
-	if [[ -z "$$(kind get clusters|sed -rn '/^'${KIND_CLUSTER_NAME}'$$/p')" ]]; then \
-		export KIND_EXPERIMENTAL_DOCKER_NETWORK=${KIND_CLUSTER_NAME}
-		kind create cluster \
-			--name ${KIND_CLUSTER_NAME} \
-			--config ${KIND_CONFIG_FILE} \
-			--image ${KIND_CLUSTER_IMAGE}; \
-	fi; \
+	cd $(ROOT_DIR)
+	source tools
+	create_kind --env-file=.env --pretty-print --debug
+
+# 	set -e
+# #	$(file > ${KIND_CONFIG_FILE},${KIND_CONFIG_FILE_CONTENT})
+# 	if [[ -z "$$(kind get clusters|sed -rn '/^'${KIND_CLUSTER_NAME}'$$/p')" ]]; then \
+# 		export KIND_EXPERIMENTAL_DOCKER_NETWORK=${KIND_CLUSTER_NAME}
+# 		kind create cluster \
+# 			--name ${KIND_CLUSTER_NAME} \
+# 			--config ${KIND_CONFIG_FILE} \
+# 			--image ${KIND_CLUSTER_IMAGE}; \
+# 	fi; \
 
 # -v 6
 
