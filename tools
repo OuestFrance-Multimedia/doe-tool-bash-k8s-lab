@@ -214,7 +214,7 @@ function push_images () {
   for i in $KIND_NODES
   do
     # docker exec -it $i ctr --namespace=k8s.io image ls
-    command='images=$(docker exec -it devops-control-plane crictl image --no-trunc); echo "$images"|sed -n 1p; echo "$images"|sed -n "/^${DOCKER_BUILD_REPOSITORY//\//\\/}\s/p"'
+    command='images=$(docker exec -it $i crictl image --no-trunc); echo "$images"|sed -n 1p; echo "$images"|sed -n "/^${DOCKER_BUILD_REPOSITORY//\//\\/}\s/p"'
     if [[ -n "$debug" ]]; then print_info --type=command --text="$command"; fi
     output=$(eval "$command")
     if [[ -n "$pretty_print" ]]; then print_info --type=output --text="$output"; fi
