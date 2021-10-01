@@ -227,12 +227,12 @@ function wait_cluster () {
   # kind export kubeconfig --name $KIND_CLUSTER_NAME
 
   set +e
-  kubectl get nodes --context ${KUBE_CONTEXT} 2>/dev/null
+  kubectl get nodes --context ${KUBE_CONTEXT} &>/dev/null
   return_code=$?
   until [[ $return_code -eq 0 ]]
   do
     sleep $(shuf -i 5-10 -n 1)
-    kubectl get nodes --context ${KUBE_CONTEXT} 2>/dev/null
+    kubectl get nodes --context ${KUBE_CONTEXT} &>/dev/null
     return_code=$?
   done
   set -e
@@ -713,6 +713,7 @@ function pull_push_images () {
     args="$args $(echo -n '--env-file='$i)"
   done
 
+  echo "ici"
   images=$(helm_template $args|sed -rn '/\s+image:\s+"?[a-zA-Z0-9\./:-]+.*/p'|sed -r 's#\s+image:\s+"?([a-zA-Z0-9\./:-]+).*#\1#'|sort -u)
   for image in $images; do \
     command="docker pull $image"
@@ -836,8 +837,6 @@ function helm_template () {
     ${HELM_SET_18:+--set $HELM_SET_18} \
     ${HELM_SET_19:+--set $HELM_SET_19} \
     ${HELM_SET_20:+--set $HELM_SET_20} \
-    ${pretty_print:+--dry-run} \
-    ${pretty_print:+--debug} \
 		--name-template=${HELM_RELEASE} \
     ${HELM_CHART}
 EOF
