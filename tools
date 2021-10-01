@@ -132,7 +132,7 @@ function create_kind () {
     sleep 2
   done
 
-	if [[ -z "$(kind get clusters|sed -rn '/^'${KIND_CLUSTER_NAME}'$/p')" ]]; then
+	if [[ -z "$(kind get clusters 2>/dev/null|sed -rn '/^'${KIND_CLUSTER_NAME}'$/p')" ]]; then
     command=$(cat <<EOF
 		kind create cluster \
 			--name ${KIND_CLUSTER_NAME} \
@@ -208,14 +208,14 @@ function wait_cluster () {
     echo "environment var named KUBE_CONTEXT is required" && exit 1
   fi
 
-  cluster=$(kind get clusters|sed -rn '/^'${KIND_CLUSTER_NAME}'$/p')
+  cluster=$(kind get clusters 2>/dev/null|sed -rn '/^'${KIND_CLUSTER_NAME}'$/p')
   until [[ -n $cluster ]]
   do
-    cluster=$(kind get clusters|sed -rn '/^'${KIND_CLUSTER_NAME}'$/p')
+    cluster=$(kind get clusters 2>/dev/null|sed -rn '/^'${KIND_CLUSTER_NAME}'$/p')
     sleep $(shuf -i 5-10 -n 1)
   done
 
-  # start_cluster
+  start_cluster
   controls_planes=$(kind get nodes --name ${KIND_CLUSTER_NAME}|sed -rn '/-control-plane$/p'|tr '\n' ' '|sed 's/,$//')
   for control_plane in $controls_planes; do
     HostPort=$(docker inspect $control_plane|jq -r '.[].NetworkSettings.Ports["6443/tcp"][0].HostPort')
@@ -314,7 +314,7 @@ function docker_build () {
   do
     eval $(cat $i)
     if [[ -n "$(sed -rn '/^KIND_CLUSTER_NAME=/p' $i)" ]]; then
-      echo "wait kind cluster ${KIND_CLUSTER_NAME} start ..."
+      print_info --type=warning --text="wait kind cluster ${KIND_CLUSTER_NAME} start ..."
       wait_cluster
     fi
   done
@@ -429,7 +429,7 @@ function push_images () {
   do
     eval $(cat $i)
     if [[ -n "$(sed -rn '/^KIND_CLUSTER_NAME=/p' $i)" ]]; then
-      echo "wait kind cluster ${KIND_CLUSTER_NAME} start ..."
+      print_info --type=warning --text="push_images - wait kind cluster ${KIND_CLUSTER_NAME} start ..."
       wait_cluster
     fi
   done
@@ -465,12 +465,12 @@ function push_images () {
   for i in $KIND_NODES
   do
     # docker exec -it $i ctr --namespace=k8s.io image ls
-    command='images=$(docker exec -it $i crictl image --no-trunc); echo "$images"|sed -n 1p; echo "$images"|sed -n "/^${DOCKER_BUILD_REPOSITORY//\//\\/}\s/p"'
+    command='images=$(docker exec $i crictl image --no-trunc); echo "$images"|sed -n 1p; echo "$images"|sed -n "/^${DOCKER_BUILD_REPOSITORY//\//\\/}\s/p"'
     if [[ -n "$debug" ]]; then print_info --type=command --text="$command"; fi
     output=$(eval "$command")
     if [[ -n "$pretty_print" ]]; then print_info --type=output --text="$output"; fi
 
-    command="docker exec -it $i crictl inspecti --output go-template --template '{{.status.id}}' $IMAGE_ID"
+    command="docker exec $i crictl inspecti --output go-template --template '{{.status.id}}' $IMAGE_ID"
     if [[ -n "$debug" ]]; then print_info --type=command --text="$command"; fi
     set +e
     # output=$(set +e && eval "$command")
@@ -485,13 +485,13 @@ function push_images () {
       output=$(eval "$command")
       if [[ -n "$pretty_print" ]]; then print_info --type=output --text="$output"; fi
 
-      command='images=$(docker exec -it $i crictl image --no-trunc); echo "$images"|sed -n 1p; echo "$images"|sed -n "/^${DOCKER_BUILD_REPOSITORY//\//\\/}\s/p"'
+      command='images=$(docker exec $i crictl image --no-trunc); echo "$images"|sed -n 1p; echo "$images"|sed -n "/^${DOCKER_BUILD_REPOSITORY//\//\\/}\s/p"'
       if [[ -n "$debug" ]]; then print_info --type=command --text="$command"; fi
       output=$(eval "$command")
       if [[ -n "$pretty_print" ]]; then print_info --type=output --text="$output"; fi
     else
       print_info --type=warning --text="image $IMAGE_ID present on $i"
-      command="docker exec -it $i ctr --namespace=k8s.io images tag $IMAGE_ID ${DOCKER_BUILD_REPOSITORY}:${DOCKER_BUILD_TAG}"
+      command="docker exec $i ctr --namespace=k8s.io images tag $IMAGE_ID ${DOCKER_BUILD_REPOSITORY}:${DOCKER_BUILD_TAG}"
       if [[ -n "$debug" ]]; then print_info --type=command --text="$command"; fi
       set +e
       output=$(eval "$command")
@@ -574,7 +574,7 @@ function crictl_images () {
   do
     eval $(cat $i)
     if [[ -n "$(sed -rn '/^KIND_CLUSTER_NAME=/p' $i)" ]]; then
-      echo "wait kind cluster ${KIND_CLUSTER_NAME} start ..."
+      print_info --type=warning --text="crictl_images - wait kind cluster ${KIND_CLUSTER_NAME} start ..."
       wait_cluster
     fi
   done
@@ -589,7 +589,7 @@ function crictl_images () {
 
   for i in $KIND_NODES
   do
-    docker exec -it $i crictl images
+    docker exec $i crictl images
   done
 }
 
@@ -692,7 +692,7 @@ function pull_push_images () {
   do
     eval $(cat $i)
     if [[ -n "$(sed -rn '/^KIND_CLUSTER_NAME=/p' $i)" ]]; then
-      echo "wait kind cluster ${KIND_CLUSTER_NAME} start ..."
+      print_info --type=warning --text="pull_push_images - wait kind cluster ${KIND_CLUSTER_NAME} start ..."
       wait_cluster
     fi
   done
@@ -759,7 +759,7 @@ function helm_template () {
   do
     eval $(cat $i)
     if [[ -n "$(sed -rn '/^KIND_CLUSTER_NAME=/p' $i)" ]]; then
-      echo "wait kind cluster ${KIND_CLUSTER_NAME} start ..."
+      print_info --type=warning --text="helm_template - wait kind cluster ${KIND_CLUSTER_NAME} start ..."
       wait_cluster
     fi
   done
@@ -876,7 +876,7 @@ function helm_upgrade () {
   do
     eval $(cat $i)
     if [[ -n "$(sed -rn '/^KIND_CLUSTER_NAME=/p' $i)" ]]; then
-      echo "wait kind cluster ${KIND_CLUSTER_NAME} start ..."
+      print_info --type=warning --text="helm_upgrade - wait kind cluster ${KIND_CLUSTER_NAME} start ..."
       wait_cluster
     fi
   done
@@ -1023,7 +1023,7 @@ function eval_env_files ()
   do
     eval $(cat $file)
     if [[ -n "$(sed -rn '/^KIND_CLUSTER_NAME=/p' $file)" ]]; then
-      echo "wait kind cluster ${KIND_CLUSTER_NAME} start ..."
+      print_info --type=warning --text="eval_env_files - wait kind cluster ${KIND_CLUSTER_NAME} start ..."
       wait_cluster
     fi
   done
@@ -1087,7 +1087,7 @@ function deploy_helm_chart () {
   do
     eval $(cat $i)
     if [[ -n "$(sed -rn '/^KIND_CLUSTER_NAME=/p' $i)" ]]; then
-      echo "wait kind cluster ${KIND_CLUSTER_NAME} start ..."
+      print_info --type=warning --text="deploy_helm_chart - wait kind cluster ${KIND_CLUSTER_NAME} start ..."
       wait_cluster
     fi
   done
