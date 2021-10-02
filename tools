@@ -125,7 +125,7 @@ function create_kind () {
     KIND_CONFIG_FILE=kind-config.yaml
   fi
 
-  echo "wait docker network ${KIND_CLUSTER_NAME} start ..."
+  print_info --type=warning --text="wait docker network ${KIND_CLUSTER_NAME} start ..."
   until [[ -n $KIND_EXPERIMENTAL_DOCKER_NETWORK ]]
   do
     KIND_EXPERIMENTAL_DOCKER_NETWORK=$(docker network ls --filter "name=^${KIND_CLUSTER_NAME}$" -q --format '{{ .Name }}')
@@ -134,6 +134,7 @@ function create_kind () {
 
 	if [[ -z "$(kind get clusters 2>/dev/null|sed -rn '/^'${KIND_CLUSTER_NAME}'$/p')" ]]; then
     command=$(cat <<EOF
+    export KIND_EXPERIMENTAL_DOCKER_NETWORK=${KIND_EXPERIMENTAL_DOCKER_NETWORK}
 		kind create cluster \
 			--name ${KIND_CLUSTER_NAME} \
 			--config ${KIND_CONFIG_FILE} \
@@ -412,7 +413,6 @@ function docker_build () {
 
 function push_images () {
   set -e
-  red='\033[1;31m'; blue='\033[34m'; reset='\033[0m'
 
   print_usage()
   {
@@ -513,7 +513,7 @@ function push_images () {
       if [[ -n "$pretty_print" ]]; then print_info --type=output --text="$output"; fi
     else
       print_info --type=warning --text="image $IMAGE_ID present on $i"
-      command="docker exec $i ctr --namespace=k8s.io images tag $IMAGE_ID ${DOCKER_BUILD_REPOSITORY}:${DOCKER_BUILD_TAG}"
+      command="docker exec $i ctr --namespace=k8s.io images tag $IMAGE_ID ${DOCKER_BUILD_REPOSITORY}:${DOCKER_BUILD_TAG} 2>/dev/null"
       if [[ -n "$debug" ]]; then print_info --type=command --text="$command"; fi
       set +e
       output=$(eval "$command")
@@ -855,7 +855,6 @@ EOF
   
   if [[ -n "$debug" ]]; then echo -e "\e[1;31m$(echo $command | sed ':a;N;$!ba;s#\\\n##g')\e[0m"; fi
   output=$(eval "$command")
-
   echo "$output"|yq eval -P
 }
 
@@ -974,8 +973,8 @@ EOF
 
   if [[ -n "$debug" ]]; then echo -e "\e[1;31m$(echo $command | sed ':a;N;$!ba;s#\\\n##g')\e[0m"; fi
   output=$(eval "$command")
-
-  echo "$output"
+  print_info --type=warning --text="##############################################################################################################"
+  echo  "$output"
 }
 
 function helm_get_last_version () {
