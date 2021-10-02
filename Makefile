@@ -109,7 +109,8 @@ deploy-argocd:
 	source tools
 	eval_env_files .env helm-dependencies/argocd.env
 	deploy_helm_chart --pretty-print --debug --add-repo --get-last-version --template --pull-push-images
-#	set +e; kubectl apply --context $${KUBE_CONTEXT} --namespace=$${HELM_NAMESPACE} -f helm-dependencies/cert-manager.Certificate.yaml ; set -e
+	jq --null-input --arg namespace "$$HELM_NAMESPACE" '{"apiVersion": "cert-manager.io/v1", "kind": "Issuer", "metadata":{"name": "selfsigned-issuer"}, "spec":{"selfSigned": {}} }' | yq e -P | kubectl apply --context $$KUBE_CONTEXT --namespace "$$HELM_NAMESPACE" -f -
+	jq --null-input --arg namespace "$$HELM_NAMESPACE" --arg domain "argocd.$${KIND_CLUSTER_NAME}.lan" '{"apiVersion": "cert-manager.io/v1", "kind": "Certificate", "metadata":{"name": "argocd-tls-certificate"}, "spec":{"secretName": "argocd-tls-certificate", "issuerRef": {"name": "selfsigned-issuer"}, commonName: $$domain, "dnsNames": [$$domain]} }' | yq e -P | kubectl apply --context $$KUBE_CONTEXT --namespace "$$HELM_NAMESPACE" -f -
 #################################################################################################################################
 destroy: ## destroy
 destroy:
