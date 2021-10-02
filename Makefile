@@ -13,7 +13,7 @@ NETWORK_GATEWAY := ${NETWORK_PREFIX}.0.1
 
 # Make defaults
 .ONESHELL:
-.SILENT: pull-push-images
+.SILENT: pull-push-images create-docker-network create-kind deploy-metallb deploy-metrics-server deploy-kube-prometheus-stack deploy-nginx-ingress-controller deploy-cert-manager deploy-argocd
 .DEFAULT_GOAL := help
 
 SHELL := /bin/bash
@@ -23,16 +23,13 @@ ROOT_DIR:=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 # MAKEFLAGS += --output-sync=target
 
 create: ## create
-create: create-docker-network create-kind deploy-metallb deploy-metrics-server deploy-kube-prometheus-stack
-#create-docker-network create-kind deploy-metallb deploy-metrics-server deploy-kube-prometheus-stack
-
-# create-kind deploy-small-stack
+create: create-docker-network create-kind deploy-metrics-server deploy-metallb deploy-nginx-ingress-controller deploy-cert-manager deploy-kube-prometheus-stack
 
 deploy-small-stack: # deploy-small-stack
-deploy-small-stack: deploy-metallb deploy-metrics-server deploy-kube-prometheus-stack
+deploy-small-stack: create
 
-create-full-stack: # create-full-stack
-create-full-stack: create deploy-metallb deploy-nginx-ingress-controller deploy-cert-manager
+deploy-full-stack: # deploy-full-stack
+deploy-full-stack: create deploy-argocd
 
 # KIND_EXPERIMENTAL_DOCKER_NETWORK
 create-docker-network: ## create-docker-network
@@ -40,7 +37,7 @@ create-docker-network:
 	set -e
 	cd $(ROOT_DIR)
 	source tools
-	create_docker_network --env-file=.env --pretty-print --debug
+	create_docker_network --env-file=.env
 
 # # https://kind.sigs.k8s.io/docs/user/configuration/
 create-kind: ## create-kind
@@ -48,7 +45,7 @@ create-kind:
 	set -e
 	cd $(ROOT_DIR)
 	source tools
-	create_kind --env-file=.env --pretty-print --debug
+	create_kind --env-file=.env
 
 # 	set -e
 # #	$(file > ${KIND_CONFIG_FILE},${KIND_CONFIG_FILE_CONTENT})
@@ -69,7 +66,7 @@ deploy-metallb:
 	cd $(ROOT_DIR)
 	source tools
 	eval_env_files .env helm-dependencies/metallb.env
-	deploy_helm_chart --pretty-print --debug --add-repo --get-last-version --template --pull-push-images
+	deploy_helm_chart --add-repo --pull-push-images
 #################################################################################################################################
 deploy-metrics-server: ## deploy-metrics-server
 deploy-metrics-server:
@@ -77,7 +74,7 @@ deploy-metrics-server:
 	cd $(ROOT_DIR)
 	source tools
 	eval_env_files .env helm-dependencies/metrics-server.env
-	deploy_helm_chart --pretty-print --debug --add-repo --get-last-version --template --pull-push-images
+	deploy_helm_chart --add-repo --pull-push-images
 	kubectl get --context ${KUBE_CONTEXT} --raw "/apis/metrics.k8s.io/v1beta1/nodes"|yq e -P
 	kubectl get --context ${KUBE_CONTEXT} --raw "/apis/metrics.k8s.io/v1beta1/pods"|yq e -P
 #################################################################################################################################
@@ -87,7 +84,7 @@ deploy-kube-prometheus-stack:
 	cd $(ROOT_DIR)
 	source tools
 	eval_env_files .env helm-dependencies/kube-prometheus-stack.env
-	deploy_helm_chart --pretty-print --debug --add-repo --get-last-version --template --pull-push-images
+	deploy_helm_chart --add-repo --pull-push-images
 #################################################################################################################################
 deploy-cert-manager: ## deploy-cert-manager
 deploy-cert-manager:
@@ -95,7 +92,7 @@ deploy-cert-manager:
 	cd $(ROOT_DIR)
 	source tools
 	eval_env_files .env helm-dependencies/cert-manager.env
-	deploy_helm_chart --pretty-print --debug --add-repo --get-last-version --template --pull-push-images
+	deploy_helm_chart --add-repo --pull-push-images
 #################################################################################################################################
 deploy-nginx-ingress-controller: ## deploy-nginx-ingress-controller
 deploy-nginx-ingress-controller:
@@ -103,7 +100,7 @@ deploy-nginx-ingress-controller:
 	cd $(ROOT_DIR)
 	source tools
 	eval_env_files .env helm-dependencies/nginx-ingress-controller.env
-	deploy_helm_chart --pretty-print --debug --add-repo --get-last-version --template --pull-push-images
+	deploy_helm_chart --add-repo --pull-push-images
 #################################################################################################################################
 deploy-argocd: ## deploy-argocd
 deploy-argocd:
@@ -111,8 +108,8 @@ deploy-argocd:
 	cd $(ROOT_DIR)
 	source tools
 	eval_env_files .env helm-dependencies/argocd.env
-#	set +e; kubectl apply --context $${KUBE_CONTEXT} --namespace=$${HELM_NAMESPACE} -f helm-dependencies/cert-manager.Certificate.yaml ; set -e
 	deploy_helm_chart --pretty-print --debug --add-repo --get-last-version --template --pull-push-images
+#	set +e; kubectl apply --context $${KUBE_CONTEXT} --namespace=$${HELM_NAMESPACE} -f helm-dependencies/cert-manager.Certificate.yaml ; set -e
 #################################################################################################################################
 destroy: ## destroy
 destroy:
