@@ -1,6 +1,6 @@
 # Make defaults
 .ONESHELL:
-.SILENT: pull-push-images create-docker-network create-kind destroy deploy-small-stack deploy-full-stack deploy-metallb deploy-metrics-server deploy-kube-prometheus-stack deploy-nginx-ingress-controller deploy-cert-manager deploy-argocd show-creds
+.SILENT: pull-push-images create-docker-network create-kind destroy deploy-small-stack deploy-full-stack deploy-metallb deploy-metrics-server deploy-kube-prometheus-stack deploy-nginx-ingress-controller deploy-cert-manager deploy-argocd show-creds deploy-gitlab
 .DEFAULT_GOAL := help
 
 SHELL := /bin/bash
@@ -114,13 +114,17 @@ deploy-gitlab:
 	cd $(ROOT_DIR)
 	source tools
 	eval_env_files .env helm-dependencies/gitlab.env
-	tempfile_envfile=$$(mktemp /tmp/envfile.XXXXXXXXXX)
-	trap "rm -Rf $$tempfile_envfile" 0 2 3 15
-	echo "DOCKER_BUILD_REPOSITORY=ruby" >> $$tempfile_envfile
-	echo "DOCKER_BUILD_TAG=2.6" >> $$tempfile_envfile
-	push_images --env-file=.env --env-file=helm-dependencies/gitlab.env --env-file=$$tempfile_envfile
-	deploy_helm_chart --add-repo --pull-push-images
-	eval $$(cat .env) ; eval $$(cat helm-dependencies/gitlab.env) ; set +e; kubectl exec --context $${KUBE_CONTEXT} --namespace=$${HELM_NAMESPACE} -it $$(kubectl get pods --context $${KUBE_CONTEXT} -l app=task-runner -n $${HELM_NAMESPACE} -ojson|jq -r '.items[0].metadata.name') -c task-runner -- gitlab-rails runner "token = User.find_by_username('root').personal_access_tokens.create(scopes: [:api], name: 'Automation token'); token.set_token('$$GITLAB_TOKEN'); token.save!"; set -e
+	deploy_helm_chart --debug
+	jq --null-input '{"apiVersion": "cert-manager.io/v1", "kind": "Issuer", "metadata":{"name": "selfsigned-issuer"}, "spec":{"selfSigned": {}} }' | yq e -P | kubectl apply --context $$KUBE_CONTEXT --namespace "$$HELM_NAMESPACE" -f -
+	domains=$$(jo array[]=minio.$${KIND_CLUSTER_NAME}.lan array[]=registry.$${KIND_CLUSTER_NAME}.lan array[]=gitlab.$${KIND_CLUSTER_NAME}.lan|jq '.array')
+	jq --null-input --arg name "$$HELM_NAMESPACE-tls-certificate" --arg domain "$$HELM_NAMESPACE.$${KIND_CLUSTER_NAME}.lan" --argjson domains "$${domains}" '{"apiVersion": "cert-manager.io/v1", "kind": "Certificate", "metadata":{"name": $$name}, "spec":{"secretName": $$name, "issuerRef": {"name": "selfsigned-issuer"}, commonName: $$domain, "dnsNames": $$domains } }' | yq e -P | kubectl apply --context $$KUBE_CONTEXT --namespace "$$HELM_NAMESPACE" -f -
+# tempfile_envfile=$$(mktemp /tmp/envfile.XXXXXXXXXX)
+# trap "rm -Rf $$tempfile_envfile" 0 2 3 15
+# echo "DOCKER_BUILD_REPOSITORY=ruby" >> $$tempfile_envfile
+# echo "DOCKER_BUILD_TAG=2.6" >> $$tempfile_envfile
+# push_images --env-file=.env --env-file=helm-dependencies/gitlab.env --env-file=$$tempfile_envfile
+#	deploy_helm_chart --add-repo --debug --pull-push-images
+#	eval $$(cat .env) ; eval $$(cat helm-dependencies/gitlab.env) ; set +e; kubectl exec --context $${KUBE_CONTEXT} --namespace=$${HELM_NAMESPACE} -it $$(kubectl get pods --context $${KUBE_CONTEXT} -l app=task-runner -n $${HELM_NAMESPACE} -ojson|jq -r '.items[0].metadata.name') -c task-runner -- gitlab-rails runner "token = User.find_by_username('root').personal_access_tokens.create(scopes: [:api], name: 'Automation token'); token.set_token('$$GITLAB_TOKEN'); token.save!"; set -e
 #################################################################################################################################
 
 show-creds: ## show-creds

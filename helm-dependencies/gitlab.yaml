@@ -16,7 +16,7 @@ global:
     # will service a particular Ingress (see docs).
     # You can configure the Ingress class to use with this chart using the
     # global.ingress.class setting. Make sure to set this in your Helm options.
-    # class: nginx
+    class: nginx
     configureCertmanager: false # kubectl get secret gitlab-wildcard-tls-ca -ojsonpath='{.data.cfssl_ca}' | base64 --decode > gitlab.localhost.ca.pem
     enabled: true
   grafana:
@@ -24,7 +24,7 @@ global:
 # While not necessarily required, if you're using an external Ingress Controller, you will likely want to
 # disable the Ingress Controller that is deployed by default with this chart:
 nginx-ingress:
-  enabled: true
+  enabled: false
   # controller:
   #   service:
   #     type: NodePort
