@@ -7,9 +7,3 @@ server:
   ingress:
     enabled: true
     ingressClassName: nginx
-    # hosts:
-    # - argocd.example.lan
-    tls:
-      - secretName: argocd-tls-certificate
-        # hosts:
-        #   - argocd.example.lan
