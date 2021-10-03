@@ -1,6 +1,6 @@
 # Make defaults
 .ONESHELL:
-.SILENT: pull-push-images create-docker-network create-kind destroy deploy-small-stack deploy-full-stack deploy-metallb deploy-metrics-server deploy-kube-prometheus-stack deploy-nginx-ingress-controller deploy-cert-manager deploy-argocd
+.SILENT: pull-push-images create-docker-network create-kind destroy deploy-small-stack deploy-full-stack deploy-metallb deploy-metrics-server deploy-kube-prometheus-stack deploy-nginx-ingress-controller deploy-cert-manager deploy-argocd show-creds
 .DEFAULT_GOAL := help
 
 SHELL := /bin/bash
@@ -107,6 +107,49 @@ deploy-argocd:
 	deploy_helm_chart --add-repo --pull-push-images
 	jq --null-input '{"apiVersion": "cert-manager.io/v1", "kind": "Issuer", "metadata":{"name": "selfsigned-issuer"}, "spec":{"selfSigned": {}} }' | yq e -P | kubectl apply --context $$KUBE_CONTEXT --namespace "$$HELM_NAMESPACE" -f -
 	jq --null-input --arg name "$$HELM_NAMESPACE-tls-certificate" --arg domain "$$HELM_NAMESPACE.$${KIND_CLUSTER_NAME}.lan" '{"apiVersion": "cert-manager.io/v1", "kind": "Certificate", "metadata":{"name": $$name}, "spec":{"secretName": $$name, "issuerRef": {"name": "selfsigned-issuer"}, commonName: $$domain, "dnsNames": [$$domain]} }' | yq e -P | kubectl apply --context $$KUBE_CONTEXT --namespace "$$HELM_NAMESPACE" -f -
+#################################################################################################################################
+
+show-creds: ## show-creds
+show-creds:
+	set -e
+	cd $(ROOT_DIR)
+	eval $$(cat .env)
+#############################################################################
+	eval $$(cat helm-dependencies/kube-prometheus-stack.env)
+
+	app=alertmanager
+	url=$$(kubectl get ingresses.networking.k8s.io $${HELM_RELEASE}-$$app --context $${KUBE_CONTEXT} -n $${HELM_NAMESPACE} -ojsonpath='{.spec.rules[0].host}')
+	echo ---
+	jq --null-input --arg app $$app --arg url "http://$${url}" '{"app": $$app, "url": $$url}' | yq e -P
+
+	app=prometheus
+	url=$$(kubectl get ingresses.networking.k8s.io $${HELM_RELEASE}-$$app --context $${KUBE_CONTEXT} -n $${HELM_NAMESPACE} -ojsonpath='{.spec.rules[0].host}')
+	echo ---
+	jq --null-input --arg app $$app --arg url "http://$${url}" '{"app": $$app, "url": $$url}' | yq e -P
+
+	app=grafana
+	url=$$(kubectl get ingresses.networking.k8s.io $${HELM_RELEASE}-$$app --context $${KUBE_CONTEXT} -n $${HELM_NAMESPACE} -ojsonpath='{.spec.rules[0].host}')
+	echo ---
+	jq --null-input --arg app $$app --arg user admin --arg password $$GRAFANA_ADMIN_PASSWORD --arg url "http://$${url}" '{"app": $$app, "url": $$url, "creds":{"user": $$user, "password":$$password}}' | yq e -P
+#############################################################################
+	echo ---
+	jq --null-input --arg app metallb --arg secret $${METALLB_SPEAKER_SECRET_VALUE} '{"app": $$app, "secret": $$secret}' | yq e -P
+#############################################################################	
+	eval $$(cat helm-dependencies/argocd.env)
+
+	app=argocd-server
+	url=$$(kubectl get ingresses.networking.k8s.io $${HELM_RELEASE}-$$app --context $${KUBE_CONTEXT} -n $${HELM_NAMESPACE} -ojsonpath='{.spec.rules[0].host}')
+	echo ---
+	jq --null-input --arg app argocd --arg user admin --arg password $$ARGOCD_SERVER_ADMIN_PASSWORD --arg url "http://$${url}" '{"app": $$app, "url": $$url, "creds":{"user": $$user, "password":$$password}}' | yq e -P
+#############################################################################
+# eval $$(cat helm-dependencies/gitlab.env)
+
+# app=webservice-default
+# url=$$(kubectl get ingresses.networking.k8s.io $${HELM_RELEASE}-$$app --context $${KUBE_CONTEXT} -n $${HELM_NAMESPACE} -ojsonpath='{.spec.rules[0].host}')
+# gitlab_password=$$(kubectl get secret gitlab-gitlab-initial-root-password --context $${KUBE_CONTEXT} -n $${HELM_NAMESPACE} -ojsonpath='{.data.password}' | base64 --decode ; echo)
+# echo ---
+# jq --null-input --arg app gitlab --arg user root --arg password $$gitlab_password --arg url "http://$${url}" '{"app": $$app, "url": $$url, "creds":{"user": $$user, "password":$$password}}' | yq e -P
+
 ###################################################################################################################################################################################
 ###################################################################################################################################################################################
 BIN_DIR := ~/bin
