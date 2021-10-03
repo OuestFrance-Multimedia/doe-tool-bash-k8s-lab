@@ -1232,3 +1232,6 @@ function deploy_helm_chart () {
 
 	helm_upgrade					${debug:+--debug}
 }
+
+# Allows to call a function based on arguments passed to the script
+$*
