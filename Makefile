@@ -104,7 +104,7 @@ deploy-argocd:
 	cd $(ROOT_DIR)
 	source tools
 	eval_env_files .env helm-dependencies/argocd.env
-	deploy_helm_chart --pretty-print --debug --add-repo --get-last-version --template --pull-push-images
+	deploy_helm_chart --add-repo --pull-push-images
 	jq --null-input '{"apiVersion": "cert-manager.io/v1", "kind": "Issuer", "metadata":{"name": "selfsigned-issuer"}, "spec":{"selfSigned": {}} }' | yq e -P | kubectl apply --context $$KUBE_CONTEXT --namespace "$$HELM_NAMESPACE" -f -
 	jq --null-input --arg name "$$HELM_NAMESPACE-tls-certificate" --arg domain "$$HELM_NAMESPACE.$${KIND_CLUSTER_NAME}.lan" '{"apiVersion": "cert-manager.io/v1", "kind": "Certificate", "metadata":{"name": $$name}, "spec":{"secretName": $$name, "issuerRef": {"name": "selfsigned-issuer"}, commonName: $$domain, "dnsNames": [$$domain]} }' | yq e -P | kubectl apply --context $$KUBE_CONTEXT --namespace "$$HELM_NAMESPACE" -f -
 ###################################################################################################################################################################################
