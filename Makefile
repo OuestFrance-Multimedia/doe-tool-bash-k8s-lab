@@ -108,13 +108,27 @@ deploy-argocd:
 	jq --null-input '{"apiVersion": "cert-manager.io/v1", "kind": "Issuer", "metadata":{"name": "selfsigned-issuer"}, "spec":{"selfSigned": {}} }' | yq e -P | kubectl apply --context $$KUBE_CONTEXT --namespace "$$HELM_NAMESPACE" -f -
 	jq --null-input --arg name "$$HELM_NAMESPACE-tls-certificate" --arg domain "$$HELM_NAMESPACE.$${KIND_CLUSTER_NAME}.lan" '{"apiVersion": "cert-manager.io/v1", "kind": "Certificate", "metadata":{"name": $$name}, "spec":{"secretName": $$name, "issuerRef": {"name": "selfsigned-issuer"}, commonName: $$domain, "dnsNames": [$$domain]} }' | yq e -P | kubectl apply --context $$KUBE_CONTEXT --namespace "$$HELM_NAMESPACE" -f -
 #################################################################################################################################
+deploy-gitlab: ## deploy-gitlab
+deploy-gitlab:
+	set -e
+	cd $(ROOT_DIR)
+	source tools
+	eval_env_files .env helm-dependencies/gitlab.env
+	tempfile_envfile=$$(mktemp /tmp/envfile.XXXXXXXXXX)
+	trap "rm -Rf $$tempfile_envfile" 0 2 3 15
+	echo "DOCKER_BUILD_REPOSITORY=ruby" >> $$tempfile_envfile
+	echo "DOCKER_BUILD_TAG=2.6" >> $$tempfile_envfile
+	push_images --env-file=.env --env-file=helm-dependencies/gitlab.env --env-file=$$tempfile_envfile
+	deploy_helm_chart --add-repo --pull-push-images
+	eval $$(cat .env) ; eval $$(cat helm-dependencies/gitlab.env) ; set +e; kubectl exec --context $${KUBE_CONTEXT} --namespace=$${HELM_NAMESPACE} -it $$(kubectl get pods --context $${KUBE_CONTEXT} -l app=task-runner -n $${HELM_NAMESPACE} -ojson|jq -r '.items[0].metadata.name') -c task-runner -- gitlab-rails runner "token = User.find_by_username('root').personal_access_tokens.create(scopes: [:api], name: 'Automation token'); token.set_token('$$GITLAB_TOKEN'); token.save!"; set -e
+#################################################################################################################################
 
 show-creds: ## show-creds
 show-creds:
 	set -e
 	cd $(ROOT_DIR)
 	eval $$(cat .env)
-#############################################################################
+###############
 	eval $$(cat helm-dependencies/kube-prometheus-stack.env)
 
 	app=alertmanager
@@ -142,14 +156,13 @@ show-creds:
 	echo ---
 	jq --null-input --arg app argocd --arg user admin --arg password $$ARGOCD_SERVER_ADMIN_PASSWORD --arg url "http://$${url}" '{"app": $$app, "url": $$url, "creds":{"user": $$user, "password":$$password}}' | yq e -P
 #############################################################################
-# eval $$(cat helm-dependencies/gitlab.env)
+	eval $$(cat helm-dependencies/gitlab.env)
 
-# app=webservice-default
-# url=$$(kubectl get ingresses.networking.k8s.io $${HELM_RELEASE}-$$app --context $${KUBE_CONTEXT} -n $${HELM_NAMESPACE} -ojsonpath='{.spec.rules[0].host}')
-# gitlab_password=$$(kubectl get secret gitlab-gitlab-initial-root-password --context $${KUBE_CONTEXT} -n $${HELM_NAMESPACE} -ojsonpath='{.data.password}' | base64 --decode ; echo)
-# echo ---
-# jq --null-input --arg app gitlab --arg user root --arg password $$gitlab_password --arg url "http://$${url}" '{"app": $$app, "url": $$url, "creds":{"user": $$user, "password":$$password}}' | yq e -P
-
+	app=webservice-default
+	url=$$(kubectl get ingresses.networking.k8s.io $${HELM_RELEASE}-$$app --context $${KUBE_CONTEXT} -n $${HELM_NAMESPACE} -ojsonpath='{.spec.rules[0].host}')
+	gitlab_password=$$(kubectl get secret $${HELM_RELEASE}-gitlab-initial-root-password --context $${KUBE_CONTEXT} -n $${HELM_NAMESPACE} -ojsonpath='{.data.password}' | base64 --decode ; echo)
+	echo ---
+	jq --null-input --arg app gitlab --arg user root --arg password $$gitlab_password --arg url "http://$${url}" '{"app": $$app, "url": $$url, "creds":{"user": $$user, "password":$$password}}' | yq e -P
 ###################################################################################################################################################################################
 ###################################################################################################################################################################################
 BIN_DIR := ~/bin

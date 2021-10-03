@@ -1,0 +1,95 @@
+# https://artifacthub.io/packages/helm/gitlab/gitlab
+# https://gitlab.com/gitlab-org/charts/gitlab/-/blob/master/charts/gitlab/values.yaml
+---
+global:
+  antiAffinity: soft # soft or hard
+  # shell:
+  #   port: 22
+  #   # tcp:
+  #   #   proxyProtocol: false
+  # hosts:
+  #   domain: example.lan
+  #   externalIP: x.y.255.201
+  #   ssh: gitlab-shell.example.lan
+  ingress:
+    # The NGINX Ingress Controller uses an annotation to mark which Ingress Controller
+    # will service a particular Ingress (see docs).
+    # You can configure the Ingress class to use with this chart using the
+    # global.ingress.class setting. Make sure to set this in your Helm options.
+    # class: nginx
+    configureCertmanager: false # kubectl get secret gitlab-wildcard-tls-ca -ojsonpath='{.data.cfssl_ca}' | base64 --decode > gitlab.localhost.ca.pem
+    enabled: true
+  grafana:
+    enabled: false
+# While not necessarily required, if you're using an external Ingress Controller, you will likely want to
+# disable the Ingress Controller that is deployed by default with this chart:
+nginx-ingress:
+  enabled: true
+  # controller:
+  #   service:
+  #     type: NodePort
+certmanager:
+  install: false
+prometheus:
+  install: false
+# https://docs.gitlab.com/runner/install/kubernetes.html#providing-a-custom-certificate-for-accessing-gitlab
+gitlab-runner:
+  install: true
+  certsSecretName: gitlab-wildcard-tls-chain
+  runners:
+    config: |
+      [[runners]]
+        [runners.kubernetes]
+          image = "ruby:2.6"
+  executor: docker
+  locked: false
+  tags: "docker"
+  name: "docker-runner"
+  runUntagged: true
+
+## Persitent Volumes
+redis:
+  master:
+    persistence:
+      size: 1Gi
+postgresql:
+  persistence:
+    size: 1Gi
+gitlab:
+  gitaly:
+    persistence:
+      size: 1Gi
+  gitlab-shell:
+    enabled: true
+    networkpolicy:
+      enabled: true
+      ingress:
+        enabled: true
+        rules:
+          - from:
+            - ipBlock:
+                cidr: 0.0.0.0/0
+            ports:
+              - port: 2222
+                protocol: TCP
+      egress:
+        enabled: true
+        rules:
+          - to:
+            - ipBlock:
+                cidr: 10.0.0.0/8
+            ports:
+              - port: 8181
+                protocol: TCP
+              - port: 8075
+                protocol: TCP
+              - port: 53
+                protocol: UDP
+  webservice:
+    enabled: true
+    # nodeSelector:
+    #   app: gitlab
+
+minio:
+  persistence:
+    size: 1Gi
