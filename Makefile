@@ -1,19 +1,6 @@
-include .env
-
-# KIND_CONFIG_FILE := /tmp/kind-${KIND_CLUSTER_NAME}-config.yml
-KIND_CONFIG_FILE := kind-config.yaml
-METALLB_CONFIG_FILE := /tmp/metallb-${KIND_CLUSTER_NAME}-config.yml
-METRICS_SERVER_CONFIG_FILE := /tmp/metrics-server-${KIND_CLUSTER_NAME}-config.yml
-PROMETHEUS_CONFIG_FILE := /tmp/prometheus-${KIND_CLUSTER_NAME}-config.yml
-KUBE_CONTEXT := kind-${KIND_CLUSTER_NAME}
-NETWORK_CIDR := ${NETWORK_PREFIX}.0.0/16
-NETWORK_GATEWAY := ${NETWORK_PREFIX}.0.1
-# METALLB_DEFAULT_ADDRESS_POOL=${NETWORK_PREFIX}.255.1-${NETWORK_PREFIX}.255.254
-
-
 # Make defaults
 .ONESHELL:
-.SILENT: pull-push-images create-docker-network create-kind deploy-metallb deploy-metrics-server deploy-kube-prometheus-stack deploy-nginx-ingress-controller deploy-cert-manager deploy-argocd
+.SILENT: pull-push-images create-docker-network create-kind destroy deploy-small-stack deploy-full-stack deploy-metallb deploy-metrics-server deploy-kube-prometheus-stack deploy-nginx-ingress-controller deploy-cert-manager deploy-argocd
 .DEFAULT_GOAL := help
 
 SHELL := /bin/bash
@@ -24,41 +11,47 @@ ROOT_DIR:=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 
 create: ## create
 create: create-docker-network create-kind deploy-metrics-server deploy-metallb deploy-nginx-ingress-controller deploy-cert-manager deploy-kube-prometheus-stack
-
+#################################################################################################################################
+destroy: ## destroy
+destroy:
+	set +e
+	cd $(ROOT_DIR)
+	source tools
+	delete_kind --env-file=.env
+#################################################################################################################################
+stop: ## stop
+stop:
+	set +e
+	cd $(ROOT_DIR)
+	source tools
+	stop_cluster --env-file=.env
+#################################################################################################################################
+start: ## start
+start:
+	set +e
+	cd $(ROOT_DIR)
+	source tools
+	start_cluster --env-file=.env
+#################################################################################################################################
 deploy-small-stack: # deploy-small-stack
 deploy-small-stack: create
-
+#################################################################################################################################
 deploy-full-stack: # deploy-full-stack
 deploy-full-stack: create deploy-argocd
-
-# KIND_EXPERIMENTAL_DOCKER_NETWORK
+#################################################################################################################################
 create-docker-network: ## create-docker-network
 create-docker-network:
 	set -e
 	cd $(ROOT_DIR)
 	source tools
 	create_docker_network --env-file=.env
-
-# # https://kind.sigs.k8s.io/docs/user/configuration/
+#################################################################################################################################
 create-kind: ## create-kind
 create-kind:
 	set -e
 	cd $(ROOT_DIR)
 	source tools
 	create_kind --env-file=.env
-
-# 	set -e
-# #	$(file > ${KIND_CONFIG_FILE},${KIND_CONFIG_FILE_CONTENT})
-# 	if [[ -z "$$(kind get clusters|sed -rn '/^'${KIND_CLUSTER_NAME}'$$/p')" ]]; then \
-# 		export KIND_EXPERIMENTAL_DOCKER_NETWORK=${KIND_CLUSTER_NAME}
-# 		kind create cluster \
-# 			--name ${KIND_CLUSTER_NAME} \
-# 			--config ${KIND_CONFIG_FILE} \
-# 			--image ${KIND_CLUSTER_IMAGE}; \
-# 	fi; \
-
-# -v 6
-
 #################################################################################################################################
 deploy-metallb: ## deploy-metallb
 deploy-metallb:
@@ -75,8 +68,8 @@ deploy-metrics-server:
 	source tools
 	eval_env_files .env helm-dependencies/metrics-server.env
 	deploy_helm_chart --add-repo --pull-push-images
-	kubectl get --context ${KUBE_CONTEXT} --raw "/apis/metrics.k8s.io/v1beta1/nodes"|yq e -P
-	kubectl get --context ${KUBE_CONTEXT} --raw "/apis/metrics.k8s.io/v1beta1/pods"|yq e -P
+	kubectl get --context $${KUBE_CONTEXT} --raw "/apis/metrics.k8s.io/v1beta1/nodes"|yq e -P
+	kubectl get --context $${KUBE_CONTEXT} --raw "/apis/metrics.k8s.io/v1beta1/pods"|yq e -P
 #################################################################################################################################
 deploy-kube-prometheus-stack: ## deploy-kube-prometheus-stack
 deploy-kube-prometheus-stack:
@@ -87,7 +80,7 @@ deploy-kube-prometheus-stack:
 	deploy_helm_chart --add-repo --pull-push-images
 	jq --null-input '{"apiVersion": "cert-manager.io/v1", "kind": "Issuer", "metadata":{"name": "selfsigned-issuer"}, "spec":{"selfSigned": {}} }' | yq e -P | kubectl apply --context $$KUBE_CONTEXT --namespace "$$HELM_NAMESPACE" -f -
 	domains=$$(jo array[]=alertmanager.$${KIND_CLUSTER_NAME}.lan array[]=grafana.$${KIND_CLUSTER_NAME}.lan array[]=grafana.$${KIND_CLUSTER_NAME}.lan|jq '.array')
-	jq --null-input --argjson domains "$${domains}" --arg name "$$HELM_NAMESPACE-tls-certificate" --arg domain "$$HELM_NAMESPACE.$${KIND_CLUSTER_NAME}.lan" '{"apiVersion": "cert-manager.io/v1", "kind": "Certificate", "metadata":{"name": $$name}, "spec":{"secretName": $$name, "issuerRef": {"name": "selfsigned-issuer"}, commonName: $$domain, "dnsNames": $$domains } }' | yq e -P | kubectl apply --context $$KUBE_CONTEXT --namespace "$$HELM_NAMESPACE" -f -
+	jq --null-input --arg name "$$HELM_NAMESPACE-tls-certificate" --arg domain "$$HELM_NAMESPACE.$${KIND_CLUSTER_NAME}.lan" --argjson domains "$${domains}" '{"apiVersion": "cert-manager.io/v1", "kind": "Certificate", "metadata":{"name": $$name}, "spec":{"secretName": $$name, "issuerRef": {"name": "selfsigned-issuer"}, commonName: $$domain, "dnsNames": $$domains } }' | yq e -P | kubectl apply --context $$KUBE_CONTEXT --namespace "$$HELM_NAMESPACE" -f -
 #################################################################################################################################
 deploy-cert-manager: ## deploy-cert-manager
 deploy-cert-manager:
@@ -114,13 +107,6 @@ deploy-argocd:
 	deploy_helm_chart --pretty-print --debug --add-repo --get-last-version --template --pull-push-images
 	jq --null-input '{"apiVersion": "cert-manager.io/v1", "kind": "Issuer", "metadata":{"name": "selfsigned-issuer"}, "spec":{"selfSigned": {}} }' | yq e -P | kubectl apply --context $$KUBE_CONTEXT --namespace "$$HELM_NAMESPACE" -f -
 	jq --null-input --arg name "$$HELM_NAMESPACE-tls-certificate" --arg domain "$$HELM_NAMESPACE.$${KIND_CLUSTER_NAME}.lan" '{"apiVersion": "cert-manager.io/v1", "kind": "Certificate", "metadata":{"name": $$name}, "spec":{"secretName": $$name, "issuerRef": {"name": "selfsigned-issuer"}, commonName: $$domain, "dnsNames": [$$domain]} }' | yq e -P | kubectl apply --context $$KUBE_CONTEXT --namespace "$$HELM_NAMESPACE" -f -
-#################################################################################################################################
-destroy: ## destroy
-destroy:
-	set +e
-	kind delete cluster --name ${KIND_CLUSTER_NAME}
-	docker network rm ${KIND_CLUSTER_NAME}
-
 ###################################################################################################################################################################################
 ###################################################################################################################################################################################
 BIN_DIR := ~/bin

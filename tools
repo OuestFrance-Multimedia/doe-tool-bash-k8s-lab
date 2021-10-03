@@ -72,7 +72,7 @@ EOF
     if [[ -n "$pretty_print" ]]; then print_info --type=output --text="$output"; fi
 	fi
 }
-
+# https://kind.sigs.k8s.io/docs/user/configuration/
 function create_kind () {
 	set -e
   print_usage()
@@ -141,41 +141,143 @@ function create_kind () {
 			--image ${KIND_CLUSTER_IMAGE}
 EOF
 )
+  # -v 6
     if [[ -n "$debug" ]]; then print_info --type=command --text="$command"; fi
     output=$(eval "$command")
     if [[ -n "$pretty_print" ]]; then print_info --type=output --text="$output"; fi
 	fi
 }
 
+function delete_kind () {
+	set +e
+  print_usage()
+  {
+    printf "usage: delete_kind --env-file=my-env-file"
+  }
 
-function start_cluster () {
-  set -e
+  env_files=()
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --env-file*)
+        env_files+=("${1#*=}")
+        ;;
+      --help)
+        print_usage
+        exit 0
+        ;;
+      *)
+        print_usage
+        exit 1
+    esac
+    shift
+  done
+
+  # if [ -z "$env_files" ]; then
+  #   print_usage
+  #   exit 1
+  # fi
+
+  for i in "${env_files[@]}"
+  do
+    eval $(cat $i)
+  done
+
   if [ -z "$KIND_CLUSTER_NAME" ]; then
     echo "${FUNCNAME[0]} - environment var named KIND_CLUSTER_NAME is required" && exit 1
   fi
-  #setopt shwordsplit 
+
+  kind delete cluster --name ${KIND_CLUSTER_NAME}
+	docker network rm ${KIND_CLUSTER_NAME}
+}
+
+function start_cluster () {
+  set -e
+  print_usage()
+  {
+    printf "usage: start_cluster --env-file=my-env-file"
+  }
+
+  env_files=()
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --env-file*)
+        env_files+=("${1#*=}")
+        ;;
+      --help)
+        print_usage
+        exit 0
+        ;;
+      *)
+        print_usage
+        exit 1
+    esac
+    shift
+  done
+
+  # if [ -z "$env_files" ]; then
+  #   print_usage
+  #   exit 1
+  # fi
+
+  for i in "${env_files[@]}"
+  do
+    eval $(cat $i)
+  done
+
+  if [ -z "$KIND_CLUSTER_NAME" ]; then
+    echo "${FUNCNAME[0]} - environment var named KIND_CLUSTER_NAME is required" && exit 1
+  fi
   nodes=$(kind get nodes --name ${KIND_CLUSTER_NAME})
   for node in $nodes; do
     if ! docker ps --format '{{.Names}}' | grep -w $node &> /dev/null; then
       sh -c "docker start $node" &> /dev/null
     fi
   done
-  #unsetopt shwordsplit
 }
 
 function stop_cluster () {
   set -e
+  print_usage()
+  {
+    printf "usage: stop_cluster --env-file=my-env-file"
+  }
+
+  env_files=()
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --env-file*)
+        env_files+=("${1#*=}")
+        ;;
+      --help)
+        print_usage
+        exit 0
+        ;;
+      *)
+        print_usage
+        exit 1
+    esac
+    shift
+  done
+
+  # if [ -z "$env_files" ]; then
+  #   print_usage
+  #   exit 1
+  # fi
+
+  for i in "${env_files[@]}"
+  do
+    eval $(cat $i)
+  done
+
   if [ -z "$KIND_CLUSTER_NAME" ]; then
     echo "${FUNCNAME[0]} - environment var named KIND_CLUSTER_NAME is required" && exit 1
   fi
-  #setopt shwordsplit 
   nodes=$(kind get nodes --name ${KIND_CLUSTER_NAME})
   for node in $nodes; do
     if docker ps --format '{{.Names}}' | grep -w $node &> /dev/null; then
       sh -c "docker stop $node" &> /dev/null
     fi
   done
-  #unsetopt shwordsplit
 }
 
 function wait_cluster () {
