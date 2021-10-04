@@ -1,5 +1,24 @@
 # https://artifacthub.io/packages/helm/gitlab/gitlab
 # https://gitlab.com/gitlab-org/charts/gitlab/-/blob/master/charts/gitlab/values.yaml
+# https://gitlab.com/gitlab-org/charts/gitlab/-/blob/master/values.yaml
+
+
+# global.shell.port or gitlab.shell.port
+
+## infos
+# https://gitlab.com/gitlab-org/charts/gitlab/-/blob/master/doc/charts/gitlab/gitlab-shell/index.md
+
+
+## gitlab
+# https://gitlab.com/gitlab-org/charts/gitlab/-/blob/master/charts/gitlab/templates/_gitlab.yaml.tpl#L48
+# https://gitlab.com/gitlab-org/charts/gitlab/-/blob/master/charts/gitlab/charts/gitlab-shell/templates/nginx-tcp-configmap.yml#L3
+# https://gitlab.com/gitlab-org/charts/gitlab/-/blob/master/charts/gitlab/charts/gitlab-shell/templates/service.yaml#L16
+# https://gitlab.com/gitlab-org/charts/gitlab/-/blob/master/charts/gitlab/charts/gitlab-shell/templates/service.yaml
+
+## nginx-ingress
+# https://gitlab.com/gitlab-org/charts/gitlab/-/blob/master/charts/nginx-ingress/templates/controller-daemonset.yaml#L87-89
+# https://gitlab.com/gitlab-org/charts/gitlab/-/blob/master/charts/nginx-ingress/templates/controller-deployment.yaml#L92-94
+
 ---
 global:
   antiAffinity: soft # soft or hard
@@ -16,7 +35,7 @@ global:
     # will service a particular Ingress (see docs).
     # You can configure the Ingress class to use with this chart using the
     # global.ingress.class setting. Make sure to set this in your Helm options.
-    class: nginx
+    # class: nginx
     configureCertmanager: false # kubectl get secret gitlab-wildcard-tls-ca -ojsonpath='{.data.cfssl_ca}' | base64 --decode > gitlab.localhost.ca.pem
     enabled: true
   grafana:
@@ -24,7 +43,7 @@ global:
 # While not necessarily required, if you're using an external Ingress Controller, you will likely want to
 # disable the Ingress Controller that is deployed by default with this chart:
 nginx-ingress:
-  enabled: false
+  enabled: true
   # controller:
   #   service:
   #     type: NodePort
