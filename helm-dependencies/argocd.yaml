@@ -1,9 +1,8 @@
 # https://artifacthub.io/packages/helm/argo/argo-cd
 # https://github.com/argoproj/argo-helm/blob/master/charts/argo-cd/values.yaml
----
 server:
   extraArgs:
-  - --insecure
+    - --insecure
   ingress:
-    enabled: true
+    enabled: false
     ingressClassName: nginx
