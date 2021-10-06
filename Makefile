@@ -126,9 +126,6 @@ deploy-gitlab:
 	echo "DOCKER_BUILD_TAG=20.10.8-dind" >> $$tempfile_envfile
 	push_images --env-file=.env --env-file=helm-dependencies/gitlab.env --env-file=$$tempfile_envfile
 	echo "DOCKER_BUILD_REPOSITORY=quay.io/skopeo/stable" > $$tempfile_envfile
-	echo "DOCKER_BUILD_TAG=latest" >> $$tempfile_envfile
-	push_images --env-file=.env --env-file=helm-dependencies/gitlab.env --env-file=$$tempfile_envfile
-	deploy_helm_chart --template --debug
 # jq --null-input '{"apiVersion": "cert-manager.io/v1", "kind": "Issuer", "metadata":{"name": "selfsigned-issuer"}, "spec":{"selfSigned": {}} }' | yq e -P | kubectl apply --context $$KUBE_CONTEXT --namespace "$$HELM_NAMESPACE" -f -
 # domains=$$(jo array[]=minio.$${KIND_CLUSTER_NAME}.lan array[]=registry.$${KIND_CLUSTER_NAME}.lan array[]=gitlab.$${KIND_CLUSTER_NAME}.lan|jq '.array')
 # jq --null-input --arg name "$$HELM_NAMESPACE-tls-certificate" --arg domain "$$HELM_NAMESPACE.$${KIND_CLUSTER_NAME}.lan" --argjson domains "$${domains}" '{"apiVersion": "cert-manager.io/v1", "kind": "Certificate", "metadata":{"name": $$name}, "spec":{"secretName": $$name, "issuerRef": {"name": "selfsigned-issuer"}, commonName: $$domain, "dnsNames": $$domains } }' | yq e -P | kubectl apply --context $$KUBE_CONTEXT --namespace "$$HELM_NAMESPACE" -f -
