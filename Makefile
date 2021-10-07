@@ -1,6 +1,6 @@
 # Make defaults
 .ONESHELL:
-.SILENT: pull-push-images create-docker-network create-kind destroy deploy-small-stack deploy-full-stack deploy-metallb deploy-metrics-server deploy-kube-prometheus-stack deploy-nginx-ingress-controller deploy-cert-manager deploy-argocd show-creds deploy-gitlab
+.SILENT: pull-push-images create-docker-network create-kind destroy deploy-small-stack deploy-full-stack deploy-metallb deploy-metrics-server deploy-kube-prometheus-stack deploy-nginx-ingress-controller deploy-cert-manager deploy-argocd show-creds deploy-gitlab gitlab-pull-push-dind-images gitlab-create-root-personal_access_tokens
 .DEFAULT_GOAL := help
 
 SHELL := /bin/bash
@@ -110,6 +110,19 @@ deploy-argocd:
 #################################################################################################################################
 deploy-gitlab: ## deploy-gitlab
 deploy-gitlab:
+	$(MAKE) gitlab-pull-push-dind-images
+	set -e
+	cd $(ROOT_DIR)
+	source tools
+	eval_env_files .env helm-dependencies/gitlab.env
+	deploy_helm_chart --debug
+# --pull-push-images
+	$(MAKE) gitlab-create-root-personal_access_tokens
+# kubectl apply --context $$KUBE_CONTEXT --namespace "$$HELM_NAMESPACE" -f pvc.yaml
+#################################################################################################################################
+
+gitlab-pull-push-dind-images: ## gitlab-pull-push-dind-images
+gitlab-pull-push-dind-images:
 	set -e
 	cd $(ROOT_DIR)
 	source tools
@@ -122,29 +135,20 @@ deploy-gitlab:
 	echo "DOCKER_BUILD_REPOSITORY=docker" > $$tempfile_envfile
 	echo "DOCKER_BUILD_TAG=20.10.8-dind" >> $$tempfile_envfile
 	push_images --env-file=.env --env-file=helm-dependencies/gitlab.env --env-file=$$tempfile_envfile
-	deploy_helm_chart --debug --pull-push-images
-# echo "DOCKER_BUILD_REPOSITORY=ruby" > $$tempfile_envfile
-# echo "DOCKER_BUILD_TAG=2.6" >> $$tempfile_envfile
-# push_images --env-file=.env --env-file=helm-dependencies/gitlab.env --env-file=$$tempfile_envfile
-# echo "DOCKER_BUILD_REPOSITORY=quay.io/skopeo/stable" > $$tempfile_envfile
-# jq --null-input '{"apiVersion": "cert-manager.io/v1", "kind": "Issuer", "metadata":{"name": "selfsigned-issuer"}, "spec":{"selfSigned": {}} }' | yq e -P | kubectl apply --context $$KUBE_CONTEXT --namespace "$$HELM_NAMESPACE" -f -
-# domains=$$(jo array[]=minio.$${KIND_CLUSTER_NAME}.lan array[]=registry.$${KIND_CLUSTER_NAME}.lan array[]=gitlab.$${KIND_CLUSTER_NAME}.lan|jq '.array')
-# jq --null-input --arg name "$$HELM_NAMESPACE-tls-certificate" --arg domain "$$HELM_NAMESPACE.$${KIND_CLUSTER_NAME}.lan" --argjson domains "$${domains}" '{"apiVersion": "cert-manager.io/v1", "kind": "Certificate", "metadata":{"name": $$name}, "spec":{"secretName": $$name, "issuerRef": {"name": "selfsigned-issuer"}, commonName: $$domain, "dnsNames": $$domains } }' | yq e -P | kubectl apply --context $$KUBE_CONTEXT --namespace "$$HELM_NAMESPACE" -f -
-#	eval $$(cat .env) ; eval $$(cat helm-dependencies/gitlab.env) ; set +e; kubectl exec --context $${KUBE_CONTEXT} --namespace=$${HELM_NAMESPACE} -it $$(kubectl get pods --context $${KUBE_CONTEXT} -l app=task-runner -n $${HELM_NAMESPACE} -ojson|jq -r '.items[0].metadata.name') -c task-runner -- gitlab-rails runner "token = User.find_by_username('root').personal_access_tokens.create(scopes: [:api], name: 'Automation token'); token.set_token('$$GITLAB_TOKEN'); token.save!"; set -e
-# kubectl apply --context $$KUBE_CONTEXT --namespace "$$HELM_NAMESPACE" -f pvc.yaml
-#################################################################################################################################
 
-creds-gitlab: ## creds-gitlab
-creds-gitlab:
+gitlab-create-root-personal_access_tokens: ## gitlab-create-root-personal_access_tokens
+gitlab-create-root-personal_access_tokens:
 	set -e
 	cd $(ROOT_DIR)
 	source tools
 	eval_env_files .env helm-dependencies/gitlab.env
 	pod=$$(kubectl get pods --context $${KUBE_CONTEXT} -l app=task-runner -n $${HELM_NAMESPACE} -ojson|jq -r '.items[0].metadata.name')
+	set +e; kubectl exec --context $${KUBE_CONTEXT} --namespace=$${HELM_NAMESPACE} -it $$(echo $$pod) -c task-runner -- gitlab-rails runner "token = User.find_by_username('root').personal_access_tokens.create(scopes: [:api], name: 'Automation token'); token.set_token('$$GITLAB_TOKEN'); token.save!"; set -e
 	kubectl exec --context $${KUBE_CONTEXT} --namespace=$${HELM_NAMESPACE} -it $$(echo $$pod) -c task-runner -- gitlab-rails runner "u = User.find_by_username('root'); pp u.attributes"
-# kubectl exec --context $${KUBE_CONTEXT} --namespace=$${HELM_NAMESPACE} -it $$(echo $$pod) -c task-runner -- bash
-# kubectl exec --context $${KUBE_CONTEXT} --namespace=$${HELM_NAMESPACE} -it $$(echo $$pod) -c task-runner -- gitlab-rails runner "u = User.find_by_username('root'); pp u.attributes"
-# gitlab-rails runner "token = User.find_by_username('root').personal_access_tokens.create(scopes: [:api], name: 'Automation token'); token.set_token('$$GITLAB_TOKEN'); token.save!"
+#	kubectl exec --context $${KUBE_CONTEXT} --namespace=$${HELM_NAMESPACE} -it $$(echo $$pod) -c task-runner -- gitlab-rails runner "u = User.new(username: 'test_user', email: 'test@example.com', name: 'Test User', password: 'password', password_confirmation: 'password'); u.skip_confirmation!; u.save!"
+# kubectl exec --context $${KUBE_CONTEXT} --namespace=$${HELM_NAMESPACE} -it $$(echo $$pod) -c task-runner -- gitlab-rake gitlab:check SANITIZE=true
+# kubectl exec --context $${KUBE_CONTEXT} --namespace=$${HELM_NAMESPACE} -it $$(echo $$pod) -c task-runner -- gitlab-rake db:migrate
+# eval $$(cat .env) ; eval $$(cat helm-dependencies/gitlab.env) ; set +e; kubectl exec --context $${KUBE_CONTEXT} --namespace=$${HELM_NAMESPACE} -it $$(kubectl get pods --context $${KUBE_CONTEXT} -l app=task-runner -n $${HELM_NAMESPACE} -ojson|jq -r '.items[0].metadata.name') -c task-runner -- gitlab-rails runner "token = User.find_by_username('root').personal_access_tokens.create(scopes: [:api], name: 'Automation token'); token.set_token('$$GITLAB_TOKEN'); token.save!"; set -e
 
 show-creds: ## show-creds
 show-creds:
