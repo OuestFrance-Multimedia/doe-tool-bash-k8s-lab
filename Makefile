@@ -438,8 +438,6 @@ config-dnsmasq:
 	sudo /bin/bash -c "echo 'port=53' > /etc/dnsmasq.conf"
 	sudo /bin/bash -c "echo 'listen-address=127.0.0.1' >> /etc/dnsmasq.conf"
 
-	sudo cp dnsmasq*.conf /etc/dnsmasq.d
-
 	sudo systemctl disable --now systemd-resolved
 	sudo systemctl restart dnsmasq
 
