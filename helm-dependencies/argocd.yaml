@@ -4,5 +4,5 @@ server:
   extraArgs:
     - --insecure
   ingress:
-    enabled: false
+    enabled: true
     ingressClassName: nginx
