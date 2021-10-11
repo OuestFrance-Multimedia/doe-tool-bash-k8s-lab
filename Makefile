@@ -171,8 +171,6 @@ gitlab-create-root-personal_access_tokens:
 #################################################################################################################################
 import-argocd-crt: ## import-argocd-crt
 import-argocd-crt:
-# kubectl get secrets/argocd-tls-certificate --namespace=argocd -o jsonpath="{.data.tls\.crt}" | base64 -d | openssl x509 -text -noout
-# kubectl get secrets/argocd-tls-certificate --namespace=argocd -o jsonpath="{.data.ca\.crt}" | base64 -d | openssl x509 -text -noout
 	set -e
 	cd $(ROOT_DIR)
 	source tools
@@ -191,14 +189,12 @@ import-argocd-crt:
 #################################################################################################################################
 import-gitlab-crt: ## import-gitlab-crt
 import-gitlab-crt:
-# kubectl get secrets/gitlab-wildcard-tls-chain --namespace=gitlab -o jsonpath="{.data.gitlab\.doe\.lan\.crt}" | base64 -d | openssl x509 -text -noout
 	set -e
 	cd $(ROOT_DIR)
 	source tools
 	eval_env_files .env helm-dependencies/gitlab.env
 	tempfile=$$(mktemp /tmp/crt.XXXXXXXXXX)
 	trap "rm -Rf $$tempfile" 0 2 3 15
-#	key=gitlab.$${KIND_CLUSTER_NAME}.lan.crt
 	key=ca.crt
 	file=gitlab.$${KIND_CLUSTER_NAME}.lan.crt
 	kubectl get secrets/gitlab-tls-certificate --context $${KUBE_CONTEXT} --namespace=$${HELM_NAMESPACE} -o jsonpath="{.data.$${key//./\\.}}" | base64 -d > $$tempfile
