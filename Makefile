@@ -96,7 +96,8 @@ import-kube-prometheus-stack-crt:
 	kubectl get secrets/monitoring-tls-certificate --context $${KUBE_CONTEXT} --namespace=$${HELM_NAMESPACE} -o jsonpath="{.data.$${key//./\\.}}" | base64 -d >> $$tempfile
 	sudo cp $$tempfile /usr/local/share/ca-certificates/$${file}
 	sudo update-ca-certificates
-	certutil -d sql:$$HOME/.pki/nssdb -A -t "CT,c,c" -n "Test Authority - $${file}" -i $$tempfile
+	nb=$$(certutil -d sql:$$HOME/.pki/nssdb -L | sed -rn "/^$${file}\s+/p" | wc -l); until [[ $nb -eq 0 ]]; do sleep 1; certutil -d sql:$$HOME/.pki/nssdb -D -n "$${file}" && nb=$$(certutil -d sql:$$HOME/.pki/nssdb -L | sed -rn "/^$${file}\s+/p" | wc -l); done
+	certutil -d sql:$$HOME/.pki/nssdb -A -t "CT,c,c" -n "$${file}" -i $$tempfile
 	certutil -d sql:$$HOME/.pki/nssdb -L
 #################################################################################################################################
 deploy-cert-manager: ## deploy-cert-manager
@@ -178,13 +179,12 @@ import-argocd-crt:
 	tempfile=$$(mktemp /tmp/crt.XXXXXXXXXX)
 	trap "rm -Rf $$tempfile" 0 2 3 15
 	file=argocd.$${KIND_CLUSTER_NAME}.lan.crt
-	key=tls.crt
-	kubectl get secrets/argocd-tls-certificate --context $${KUBE_CONTEXT} --namespace=$${HELM_NAMESPACE} -o jsonpath="{.data.$${key//./\\.}}" | base64 -d >> $$tempfile
 	key=ca.crt
 	kubectl get secrets/argocd-tls-certificate --context $${KUBE_CONTEXT} --namespace=$${HELM_NAMESPACE} -o jsonpath="{.data.$${key//./\\.}}" | base64 -d >> $$tempfile
 	sudo cp $$tempfile /usr/local/share/ca-certificates/$${file}
 	sudo update-ca-certificates
-	certutil -d sql:$$HOME/.pki/nssdb -A -t "CT,c,c" -n "Test Authority - $${file}" -i $$tempfile
+	nb=$$(certutil -d sql:$$HOME/.pki/nssdb -L | sed -rn "/^$${file}\s+/p" | wc -l); until [[ $nb -eq 0 ]]; do sleep 1; certutil -d sql:$$HOME/.pki/nssdb -D -n "$${file}" && nb=$$(certutil -d sql:$$HOME/.pki/nssdb -L | sed -rn "/^$${file}\s+/p" | wc -l); done
+	certutil -d sql:$$HOME/.pki/nssdb -A -t "CT,c,c" -n "$${file}" -i $$tempfile
 	certutil -d sql:$$HOME/.pki/nssdb -L
 #################################################################################################################################
 import-gitlab-crt: ## import-gitlab-crt
@@ -200,7 +200,8 @@ import-gitlab-crt:
 	kubectl get secrets/gitlab-tls-certificate --context $${KUBE_CONTEXT} --namespace=$${HELM_NAMESPACE} -o jsonpath="{.data.$${key//./\\.}}" | base64 -d > $$tempfile
 	sudo cp $$tempfile /usr/local/share/ca-certificates/$${file}
 	sudo update-ca-certificates
-	certutil -d sql:$$HOME/.pki/nssdb -A -t "CT,c,c" -n "Test Authority - $${file}" -i $$tempfile
+	nb=$$(certutil -d sql:$$HOME/.pki/nssdb -L | sed -rn "/^$${file}\s+/p" | wc -l); until [[ $nb -eq 0 ]]; do sleep 1; certutil -d sql:$$HOME/.pki/nssdb -D -n "$${file}" && nb=$$(certutil -d sql:$$HOME/.pki/nssdb -L | sed -rn "/^$${file}\s+/p" | wc -l); done
+	certutil -d sql:$$HOME/.pki/nssdb -A -t "CT,c,c" -n "$${file}" -i $$tempfile
 	certutil -d sql:$$HOME/.pki/nssdb -L
 #################################################################################################################################
 # https://superuser.com/questions/437330/how-do-you-add-a-certificate-authority-ca-to-ubuntu
