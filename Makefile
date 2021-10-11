@@ -79,8 +79,25 @@ deploy-kube-prometheus-stack:
 	eval_env_files .env helm-dependencies/kube-prometheus-stack.env
 	deploy_helm_chart --add-repo --pull-push-images
 	jq --null-input '{"apiVersion": "cert-manager.io/v1", "kind": "Issuer", "metadata":{"name": "selfsigned-issuer"}, "spec":{"selfSigned": {}} }' | yq e -P | kubectl apply --context $$KUBE_CONTEXT --namespace "$$HELM_NAMESPACE" -f -
-	domains=$$(jo array[]=alertmanager.$${KIND_CLUSTER_NAME}.lan array[]=grafana.$${KIND_CLUSTER_NAME}.lan array[]=grafana.$${KIND_CLUSTER_NAME}.lan|jq '.array')
+	domains=$$(jo array[]=alertmanager.$${KIND_CLUSTER_NAME}.lan array[]=grafana.$${KIND_CLUSTER_NAME}.lan array[]=prometheus.$${KIND_CLUSTER_NAME}.lan|jq '.array')
 	jq --null-input --arg name "$$HELM_NAMESPACE-tls-certificate" --arg domain "$$HELM_NAMESPACE.$${KIND_CLUSTER_NAME}.lan" --argjson domains "$${domains}" '{"apiVersion": "cert-manager.io/v1", "kind": "Certificate", "metadata":{"name": $$name}, "spec":{"secretName": $$name, "issuerRef": {"name": "selfsigned-issuer"}, commonName: $$domain, "dnsNames": $$domains } }' | yq e -P | kubectl apply --context $$KUBE_CONTEXT --namespace "$$HELM_NAMESPACE" -f -
+#################################################################################################################################
+import-kube-prometheus-stack-crt: ## import-kube-prometheus-stack-crt
+import-kube-prometheus-stack-crt:
+# kubectl get secrets/monitoring-tls-certificate --namespace=monitoring -o jsonpath="{.data.ca\.crt}" | base64 -d
+	set -e
+	cd $(ROOT_DIR)
+	source tools
+	eval_env_files .env helm-dependencies/kube-prometheus-stack.env
+	tempfile=$$(mktemp /tmp/crt.XXXXXXXXXX)
+	trap "rm -Rf $$tempfile" 0 2 3 15
+	file=monitoring.$${KIND_CLUSTER_NAME}.lan.crt
+	key=ca.crt
+	kubectl get secrets/monitoring-tls-certificate --context $${KUBE_CONTEXT} --namespace=$${HELM_NAMESPACE} -o jsonpath="{.data.$${key//./\\.}}" | base64 -d >> $$tempfile
+	sudo cp $$tempfile /usr/local/share/ca-certificates/$${file}
+	sudo update-ca-certificates
+	certutil -d sql:$$HOME/.pki/nssdb -A -t "CT,c,c" -n "Test Authority - $${file}" -i $$tempfile
+	certutil -d sql:$$HOME/.pki/nssdb -L
 #################################################################################################################################
 deploy-cert-manager: ## deploy-cert-manager
 deploy-cert-manager:
@@ -117,10 +134,12 @@ deploy-gitlab:
 	eval_env_files .env helm-dependencies/gitlab.env
 	jq --null-input --arg namespace "$$HELM_NAMESPACE" '{"apiVersion": "v1","kind":"Namespace","metadata":{"name":$$namespace}}' | yq e -P | kubectl apply --context $$KUBE_CONTEXT -f -
 	jq --null-input --arg namespace "$$HELM_NAMESPACE" '{"apiVersion":"v1","kind":"PersistentVolumeClaim","metadata":{"name":"gitlab-dind-var-lib","namespace":$$namespace},"spec":{"accessModes":["ReadWriteOnce"],"resources":{"requests":{"storage":"5Gi"}},"storageClassName":"standard","volumeMode":"Filesystem"}}' | yq e -P | kubectl apply --context $$KUBE_CONTEXT --namespace "$$HELM_NAMESPACE" -f -
-	deploy_helm_chart --add-repo --pull-push-images --debug
+	jq --null-input '{"apiVersion": "cert-manager.io/v1", "kind": "Issuer", "metadata":{"name": "selfsigned-issuer"}, "spec":{"selfSigned": {}} }' | yq e -P | kubectl apply --context $$KUBE_CONTEXT --namespace "$$HELM_NAMESPACE" -f -
+	domains=$$(jo array[]=gitlab.$${KIND_CLUSTER_NAME}.lan array[]=minio.$${KIND_CLUSTER_NAME}.lan array[]=registry.$${KIND_CLUSTER_NAME}.lan|jq '.array')
+	jq --null-input --arg name "gitlab-tls-certificate" --arg domain "$$HELM_NAMESPACE.$${KIND_CLUSTER_NAME}.lan" --argjson domains "$${domains}" '{"apiVersion": "cert-manager.io/v1", "kind": "Certificate", "metadata":{"name": $$name}, "spec":{"secretName": $$name, "issuerRef": {"name": "selfsigned-issuer"}, commonName: $$domain, "dnsNames": $$domains } }' | yq e -P | kubectl apply --context $$KUBE_CONTEXT --namespace "$$HELM_NAMESPACE" -f -
+	deploy_helm_chart --add-repo --pull-push-images
 	$(MAKE) gitlab-create-root-personal_access_tokens
 #################################################################################################################################
-
 gitlab-pull-push-dind-images: ## gitlab-pull-push-dind-images
 gitlab-pull-push-dind-images:
 	set -e
@@ -135,7 +154,7 @@ gitlab-pull-push-dind-images:
 	echo "DOCKER_BUILD_REPOSITORY=docker" > $$tempfile_envfile
 	echo "DOCKER_BUILD_TAG=20.10.8-dind" >> $$tempfile_envfile
 	push_images --env-file=.env --env-file=helm-dependencies/gitlab.env --env-file=$$tempfile_envfile
-
+#################################################################################################################################
 gitlab-create-root-personal_access_tokens: ## gitlab-create-root-personal_access_tokens
 gitlab-create-root-personal_access_tokens:
 	set -e
@@ -149,9 +168,11 @@ gitlab-create-root-personal_access_tokens:
 # kubectl exec --context $${KUBE_CONTEXT} --namespace=$${HELM_NAMESPACE} -it $$(echo $$pod) -c task-runner -- gitlab-rake gitlab:check SANITIZE=true
 # kubectl exec --context $${KUBE_CONTEXT} --namespace=$${HELM_NAMESPACE} -it $$(echo $$pod) -c task-runner -- gitlab-rake db:migrate
 # eval $$(cat .env) ; eval $$(cat helm-dependencies/gitlab.env) ; set +e; kubectl exec --context $${KUBE_CONTEXT} --namespace=$${HELM_NAMESPACE} -it $$(kubectl get pods --context $${KUBE_CONTEXT} -l app=task-runner -n $${HELM_NAMESPACE} -ojson|jq -r '.items[0].metadata.name') -c task-runner -- gitlab-rails runner "token = User.find_by_username('root').personal_access_tokens.create(scopes: [:api], name: 'Automation token'); token.set_token('$$GITLAB_TOKEN'); token.save!"; set -e
-
+#################################################################################################################################
 import-argocd-crt: ## import-argocd-crt
 import-argocd-crt:
+# kubectl get secrets/argocd-tls-certificate --namespace=argocd -o jsonpath="{.data.tls\.crt}" | base64 -d | openssl x509 -text -noout
+# kubectl get secrets/argocd-tls-certificate --namespace=argocd -o jsonpath="{.data.ca\.crt}" | base64 -d | openssl x509 -text -noout
 	set -e
 	cd $(ROOT_DIR)
 	source tools
@@ -165,26 +186,32 @@ import-argocd-crt:
 	kubectl get secrets/argocd-tls-certificate --context $${KUBE_CONTEXT} --namespace=$${HELM_NAMESPACE} -o jsonpath="{.data.$${key//./\\.}}" | base64 -d >> $$tempfile
 	sudo cp $$tempfile /usr/local/share/ca-certificates/$${file}
 	sudo update-ca-certificates
-
+	certutil -d sql:$$HOME/.pki/nssdb -A -t "CT,c,c" -n "Test Authority - $${file}" -i $$tempfile
+	certutil -d sql:$$HOME/.pki/nssdb -L
+#################################################################################################################################
 import-gitlab-crt: ## import-gitlab-crt
 import-gitlab-crt:
+# kubectl get secrets/gitlab-wildcard-tls-chain --namespace=gitlab -o jsonpath="{.data.gitlab\.doe\.lan\.crt}" | base64 -d | openssl x509 -text -noout
 	set -e
 	cd $(ROOT_DIR)
 	source tools
 	eval_env_files .env helm-dependencies/gitlab.env
 	tempfile=$$(mktemp /tmp/crt.XXXXXXXXXX)
 	trap "rm -Rf $$tempfile" 0 2 3 15
-	key=gitlab.$${KIND_CLUSTER_NAME}.lan.crt
+#	key=gitlab.$${KIND_CLUSTER_NAME}.lan.crt
+	key=ca.crt
 	file=gitlab.$${KIND_CLUSTER_NAME}.lan.crt
-	kubectl get secrets/gitlab-wildcard-tls-chain --context $${KUBE_CONTEXT} --namespace=$${HELM_NAMESPACE} -o jsonpath="{.data.$${key//./\\.}}" | base64 -d > $$tempfile
+	kubectl get secrets/gitlab-tls-certificate --context $${KUBE_CONTEXT} --namespace=$${HELM_NAMESPACE} -o jsonpath="{.data.$${key//./\\.}}" | base64 -d > $$tempfile
 	sudo cp $$tempfile /usr/local/share/ca-certificates/$${file}
 	sudo update-ca-certificates
-
+	certutil -d sql:$$HOME/.pki/nssdb -A -t "CT,c,c" -n "Test Authority - $${file}" -i $$tempfile
+	certutil -d sql:$$HOME/.pki/nssdb -L
+#################################################################################################################################
 # https://superuser.com/questions/437330/how-do-you-add-a-certificate-authority-ca-to-ubuntu
 install-cert-tools: ## install-cert-tools
 install-cert-tools:
 	set -e
-	packages="p11-kit libnss3"; \
+	packages="p11-kit libnss3 libnss3-tools"; \
 	packages_list=''; \
 	for package in $$packages; do [ -z "`dpkg -l | grep -P "ii\s+$$package(?:[\s+|:])" || :`" ] && packages_list="$$packages_list $$package"; done
 	echo $$packages_list; \
@@ -236,6 +263,16 @@ show-creds:
 	gitlab_password=$$(kubectl get secret $${HELM_RELEASE}-gitlab-initial-root-password --context $${KUBE_CONTEXT} -n $${HELM_NAMESPACE} -ojsonpath='{.data.password}' | base64 --decode ; echo)
 	echo ---
 	jq --null-input --arg app gitlab --arg user root --arg password $$gitlab_password --arg url "http://$${url}" '{"app": $$app, "url": $$url, "creds":{"user": $$user, "password":$$password}}' | yq e -P
+
+	app=minio
+	url=$$(kubectl get ingresses.networking.k8s.io $${HELM_RELEASE}-$$app --context $${KUBE_CONTEXT} -n $${HELM_NAMESPACE} -ojsonpath='{.spec.rules[0].host}')
+	echo ---
+	jq --null-input --arg app $$app --arg url "http://$${url}" '{"app": $$app, "url": $$url}' | yq e -P
+
+	app=registry
+	url=$$(kubectl get ingresses.networking.k8s.io $${HELM_RELEASE}-$$app --context $${KUBE_CONTEXT} -n $${HELM_NAMESPACE} -ojsonpath='{.spec.rules[0].host}')
+	echo ---
+	jq --null-input --arg app $$app --arg url "http://$${url}" '{"app": $$app, "url": $$url}' | yq e -P
 ###################################################################################################################################################################################
 ###################################################################################################################################################################################
 BIN_DIR := ~/bin

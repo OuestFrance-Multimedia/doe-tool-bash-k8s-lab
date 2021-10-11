@@ -4,6 +4,9 @@ global:
   shell:
     port: 22
   ingress:
+    tls:
+      enabled: true
+      secretName: gitlab-tls-certificate
     configureCertmanager: false
 nginx-ingress:
   controller:
