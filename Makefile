@@ -115,9 +115,10 @@ deploy-gitlab:
 	$(MAKE) gitlab-pull-push-dind-images
 	source tools
 	eval_env_files .env helm-dependencies/gitlab.env
+	jq --null-input --arg namespace "$$HELM_NAMESPACE" '{"apiVersion": "v1","kind":"Namespace","metadata":{"name":$$namespace}}' | yq e -P | kubectl apply --context $$KUBE_CONTEXT -f -
+	jq --null-input --arg namespace "$$HELM_NAMESPACE" '{"apiVersion":"v1","kind":"PersistentVolumeClaim","metadata":{"name":"gitlab-dind-var-lib","namespace":$$namespace},"spec":{"accessModes":["ReadWriteOnce"],"resources":{"requests":{"storage":"5Gi"}},"storageClassName":"standard","volumeMode":"Filesystem"}}' | yq e -P | kubectl apply --context $$KUBE_CONTEXT --namespace "$$HELM_NAMESPACE" -f -
 	deploy_helm_chart --add-repo --pull-push-images --debug
 	$(MAKE) gitlab-create-root-personal_access_tokens
-# kubectl apply --context $$KUBE_CONTEXT --namespace "$$HELM_NAMESPACE" -f pvc.yaml
 #################################################################################################################################
 
 gitlab-pull-push-dind-images: ## gitlab-pull-push-dind-images

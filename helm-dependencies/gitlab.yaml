@@ -17,6 +17,24 @@ prometheus:
   install: false
 gitlab-runner:
   certsSecretName: gitlab-wildcard-tls-chain
+  logLevel: debug
+  runners:
+    locked: false
+    config: |
+      [[runners]]
+        [runners.kubernetes]
+          image = "docker:20.10.8"
+          poll_timeout = 180
+          privileged = true
+        [runners.kubernetes.volumes]
+          [[runners.kubernetes.volumes.empty_dir]]
+            name = "docker-certs"
+            mount_path = "/certs/client"
+            medium = "Memory"
+          [[runners.kubernetes.volumes.pvc]]
+            name = "gitlab-dind-var-lib"
+            mount_path = "/var/lib/docker"
+    executor: kubernetes
 redis:
   master:
     persistence:
