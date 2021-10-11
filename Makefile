@@ -110,13 +110,12 @@ deploy-argocd:
 #################################################################################################################################
 deploy-gitlab: ## deploy-gitlab
 deploy-gitlab:
-	$(MAKE) gitlab-pull-push-dind-images
 	set -e
 	cd $(ROOT_DIR)
+	$(MAKE) gitlab-pull-push-dind-images
 	source tools
 	eval_env_files .env helm-dependencies/gitlab.env
-	deploy_helm_chart --debug
-# --pull-push-images
+	deploy_helm_chart --add-repo --pull-push-images --debug
 	$(MAKE) gitlab-create-root-personal_access_tokens
 # kubectl apply --context $$KUBE_CONTEXT --namespace "$$HELM_NAMESPACE" -f pvc.yaml
 #################################################################################################################################
@@ -150,6 +149,52 @@ gitlab-create-root-personal_access_tokens:
 # kubectl exec --context $${KUBE_CONTEXT} --namespace=$${HELM_NAMESPACE} -it $$(echo $$pod) -c task-runner -- gitlab-rake db:migrate
 # eval $$(cat .env) ; eval $$(cat helm-dependencies/gitlab.env) ; set +e; kubectl exec --context $${KUBE_CONTEXT} --namespace=$${HELM_NAMESPACE} -it $$(kubectl get pods --context $${KUBE_CONTEXT} -l app=task-runner -n $${HELM_NAMESPACE} -ojson|jq -r '.items[0].metadata.name') -c task-runner -- gitlab-rails runner "token = User.find_by_username('root').personal_access_tokens.create(scopes: [:api], name: 'Automation token'); token.set_token('$$GITLAB_TOKEN'); token.save!"; set -e
 
+import-argocd-crt: ## import-argocd-crt
+import-argocd-crt:
+	set -e
+	cd $(ROOT_DIR)
+	source tools
+	eval_env_files .env helm-dependencies/argocd.env
+	tempfile=$$(mktemp /tmp/crt.XXXXXXXXXX)
+	trap "rm -Rf $$tempfile" 0 2 3 15
+	file=argocd.$${KIND_CLUSTER_NAME}.lan.crt
+	key=tls.crt
+	kubectl get secrets/argocd-tls-certificate --context $${KUBE_CONTEXT} --namespace=$${HELM_NAMESPACE} -o jsonpath="{.data.$${key//./\\.}}" | base64 -d >> $$tempfile
+	key=ca.crt
+	kubectl get secrets/argocd-tls-certificate --context $${KUBE_CONTEXT} --namespace=$${HELM_NAMESPACE} -o jsonpath="{.data.$${key//./\\.}}" | base64 -d >> $$tempfile
+	sudo cp $$tempfile /usr/local/share/ca-certificates/$${file}
+	sudo update-ca-certificates
+
+import-gitlab-crt: ## import-gitlab-crt
+import-gitlab-crt:
+	set -e
+	cd $(ROOT_DIR)
+	source tools
+	eval_env_files .env helm-dependencies/gitlab.env
+	tempfile=$$(mktemp /tmp/crt.XXXXXXXXXX)
+	trap "rm -Rf $$tempfile" 0 2 3 15
+	key=gitlab.$${KIND_CLUSTER_NAME}.lan.crt
+	file=gitlab.$${KIND_CLUSTER_NAME}.lan.crt
+	kubectl get secrets/gitlab-wildcard-tls-chain --context $${KUBE_CONTEXT} --namespace=$${HELM_NAMESPACE} -o jsonpath="{.data.$${key//./\\.}}" | base64 -d > $$tempfile
+	sudo cp $$tempfile /usr/local/share/ca-certificates/$${file}
+	sudo update-ca-certificates
+
+# https://superuser.com/questions/437330/how-do-you-add-a-certificate-authority-ca-to-ubuntu
+install-cert-tools: ## install-cert-tools
+install-cert-tools:
+	set -e
+	packages="p11-kit libnss3"; \
+	packages_list=''; \
+	for package in $$packages; do [ -z "`dpkg -l | grep -P "ii\s+$$package(?:[\s+|:])" || :`" ] && packages_list="$$packages_list $$package"; done
+	echo $$packages_list; \
+	if ! [ -z "$$packages_list" ]; then \
+		sudo /bin/bash -c "apt update && apt-get --no-install-recommends install -y $$packages_list"; \
+	fi
+	find / -type f ! -path '/snap/*' -name "libnssckbi.so" 2>/dev/null | while read line; do \
+		sudo mv $$line $${line}.bak; \
+		sudo ln -s /usr/lib/$$(uname -m)-linux-gnu/pkcs11/p11-kit-trust.so $$line; \
+	done
+
 show-creds: ## show-creds
 show-creds:
 	set -e
@@ -176,12 +221,12 @@ show-creds:
 	echo ---
 	jq --null-input --arg app metallb --arg secret $${METALLB_SPEAKER_SECRET_VALUE} '{"app": $$app, "secret": $$secret}' | yq e -P
 #############################################################################	
-# eval $$(cat helm-dependencies/argocd.env)
+	eval $$(cat helm-dependencies/argocd.env)
 
-# app=argocd-server
-# url=$$(kubectl get ingresses.networking.k8s.io $${HELM_RELEASE}-$$app --context $${KUBE_CONTEXT} -n $${HELM_NAMESPACE} -ojsonpath='{.spec.rules[0].host}')
-# echo ---
-# jq --null-input --arg app argocd --arg user admin --arg password $$ARGOCD_SERVER_ADMIN_PASSWORD --arg url "http://$${url}" '{"app": $$app, "url": $$url, "creds":{"user": $$user, "password":$$password}}' | yq e -P
+	app=argocd-server
+	url=$$(kubectl get ingresses.networking.k8s.io $${HELM_RELEASE}-$$app --context $${KUBE_CONTEXT} -n $${HELM_NAMESPACE} -ojsonpath='{.spec.rules[0].host}')
+	echo ---
+	jq --null-input --arg app argocd --arg user admin --arg password $$ARGOCD_SERVER_ADMIN_PASSWORD --arg url "http://$${url}" '{"app": $$app, "url": $$url, "creds":{"user": $$user, "password":$$password}}' | yq e -P
 #############################################################################
 	eval $$(cat helm-dependencies/gitlab.env)
 
@@ -195,13 +240,28 @@ show-creds:
 BIN_DIR := ~/bin
 
 install: ## install
-install: install-docker prepare-env install-packages install-kind install-helm install-yq install-lens install-kubectx install-kubens install-dnsmasq
+install: install-docker install-kubectl prepare-env install-packages install-kind install-helm install-yq install-lens install-kubectx install-kubens install-dnsmasq
+
+install-kubectl: ## install-kubectl
+install-kubectl:
+	if ! [ -f /usr/share/keyrings/kubernetes-archive-keyring.gpg ]; then \
+		curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo gpg --dearmor -o /usr/share/keyrings/kubernetes-archive-keyring.gpg ; \
+	fi; \
+	if [[ ! -f /etc/apt/sources.list.d/kubernetes.list ]] || [[ ! $$(grep -Po "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" /etc/apt/sources.list.d/kubernetes.list) ]] ; then \
+		echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list > /dev/null
+	fi; \
+	packages="kubectl"; \
+	packages_list=''; \
+	for package in $$packages; do [ -z "`dpkg -l | grep -P "ii\s+$$package(?:[\s+|:])" || :`" ] && packages_list="$$packages_list $$package"; done
+	if ! [ -z "$$packages_list" ]; then \
+		sudo /bin/bash -c "apt update && apt-get --no-install-recommends install -y $$packages_list"; \
+	fi; \
 
 install-docker: ## install-docker
 install-docker:
 	packages="apt-transport-https ca-certificates curl gnupg lsb-release"; \
 	packages_list=''; \
-	for package in $$packages; do [ -z "`dpkg -l | grep -P "ii\s+$$package\s+" || :`" ] && packages_list="$$packages_list $$package"; done
+	for package in $$packages; do [ -z "`dpkg -l | grep -P "ii\s+$$package(?:[\s+|:])" || :`" ] && packages_list="$$packages_list $$package"; done
 	if ! [ -z "$$packages_list" ]; then \
 		sudo /bin/bash -c "apt update && apt-get --no-install-recommends install -y $$packages_list"; \
 	fi; \
@@ -221,7 +281,7 @@ install-docker:
 	fi; \
 	packages="docker-ce docker-ce-cli containerd.io"; \
 	packages_list=''; \
-	for package in $$packages; do [ -z "`dpkg -l | grep -P "ii\s+$$package\s+" || :`" ] && packages_list="$$packages_list $$package"; done
+	for package in $$packages; do [ -z "`dpkg -l | grep -P "ii\s+$$package(?:[\s+|:])" || :`" ] && packages_list="$$packages_list $$package"; done
 	if ! [ -z "$$packages_list" ]; then \
 		sudo /bin/bash -c "apt update && apt-get --no-install-recommends install -y $$packages_list"; \
 	fi; \
@@ -275,7 +335,7 @@ install-packages: ## install-packages
 install-packages:
 	packages="openssl kubectl jq jo dnsutils iputils-ping netcat procps curl mariadb-client"; \
 	packages_list=''; \
-	for package in $$packages; do [ -z "`dpkg -l | grep -P "ii\s+$$package\s+" || :`" ] && packages_list="$$packages_list $$package"; done
+	for package in $$packages; do [ -z "`dpkg -l | grep -P "ii\s+$$package(?:[\s+|:])" || :`" ] && packages_list="$$packages_list $$package"; done
 	if ! [ -z "$$packages_list" ]; then \
 		sudo /bin/bash -c "apt update && apt-get --no-install-recommends install -y $$packages_list"; \
 	fi; \
@@ -362,7 +422,7 @@ install-dnsmasq:
 	fi
 
 	package='dnsmasq'; \
-	if [ -z "`dpkg -l | grep -P "ii\s+$$package\s+" || :`" ]; then \
+	if [ -z "`dpkg -l | grep -P "ii\s+$$package(?:[\s+|:])" || :`" ]; then \
 		sudo apt install -y $$package; \
 	fi
 
