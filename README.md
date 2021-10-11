@@ -45,7 +45,7 @@ make install
 | [kind](#kind)                     	| binary  	| Kubernetes IN Docker                       	| `make install-kind`          	|
 | [helm](#helm)                     	| binary  	| The package manager for Kubernetes         	| `make install-helm`          	|
 | [lens](#lens)                     	| snap    	| The Kubernetes IDE                         	| `make install-lens`          	|
-| [kubectl](#kubectl)               	| package 	| The Kubernetes command-line tools          	| `make install-packages`      	|
+| [kubectl](#kubectl)               	| package 	| The Kubernetes command-line tools          	| `make install-kubectl`      	|
 | [kubectx](#kubectx)               	| binary  	| manage and switch between kubectl contexts 	| `make install-kubectx`       	|
 | [kubens](#kubens)                 	| binary  	| switch between Kubernetes namespaces       	| `make install-kubens`        	|
 | [jq](#jq])                         	| package 	| a command-line JSON processor             	| `make install-packages`      	|
