@@ -1,88 +1,22 @@
 # https://artifacthub.io/packages/helm/gitlab/gitlab
-# https://gitlab.com/gitlab-org/charts/gitlab/-/blob/master/charts/gitlab/values.yaml
-# https://gitlab.com/gitlab-org/charts/gitlab/-/blob/master/values.yaml
-
-
-# global.shell.port or gitlab.shell.port
-
-## infos
-# https://gitlab.com/gitlab-org/charts/gitlab/-/blob/master/doc/charts/gitlab/gitlab-shell/index.md
-
-
-## gitlab
-# https://gitlab.com/gitlab-org/charts/gitlab/-/blob/master/charts/gitlab/templates/_gitlab.yaml.tpl#L48
-# https://gitlab.com/gitlab-org/charts/gitlab/-/blob/master/charts/gitlab/charts/gitlab-shell/templates/nginx-tcp-configmap.yml#L3
-# https://gitlab.com/gitlab-org/charts/gitlab/-/blob/master/charts/gitlab/charts/gitlab-shell/templates/service.yaml#L16
-# https://gitlab.com/gitlab-org/charts/gitlab/-/blob/master/charts/gitlab/charts/gitlab-shell/templates/service.yaml
-
-## nginx-ingress
-# https://gitlab.com/gitlab-org/charts/gitlab/-/blob/master/charts/nginx-ingress/templates/controller-daemonset.yaml#L87-89
-# https://gitlab.com/gitlab-org/charts/gitlab/-/blob/master/charts/nginx-ingress/templates/controller-deployment.yaml#L92-94
-
 ---
 global:
-  antiAffinity: soft # soft or hard
   shell:
     port: 22
-  #   # tcp:
-  #   #   proxyProtocol: false
-  # hosts:
-  #   domain: example.lan
-  #   externalIP: x.y.255.201
-  #   ssh: gitlab-shell.example.lan
   ingress:
-    # The NGINX Ingress Controller uses an annotation to mark which Ingress Controller
-    # will service a particular Ingress (see docs).
-    # You can configure the Ingress class to use with this chart using the
-    # global.ingress.class setting. Make sure to set this in your Helm options.
-    # class: nginx
-    configureCertmanager: false # kubectl get secret gitlab-wildcard-tls-ca -ojsonpath='{.data.cfssl_ca}' | base64 --decode > gitlab.localhost.ca.pem
-    enabled: true
-  grafana:
-    enabled: false
-# While not necessarily required, if you're using an external Ingress Controller, you will likely want to
-# disable the Ingress Controller that is deployed by default with this chart:
+    configureCertmanager: false
 nginx-ingress:
-  enabled: true
-  # controller:
-  #   service:
-  #     type: NodePort
+  controller:
+    autoscaling:
+      enabled: true
+      minReplicas: 1
+      maxReplicas: 1
 certmanager:
   install: false
 prometheus:
   install: false
-# https://docs.gitlab.com/charts/charts/gitlab/gitlab-runner/
-# https://docs.gitlab.com/runner/install/kubernetes.html#additional-configuration
-# https://about.gitlab.com/blog/2019/07/31/docker-in-docker-with-docker-19-dot-03/
-# https://gitlab.com/gitlab-org/charts/gitlab-runner
-# https://docs.gitlab.com/runner/install/kubernetes.html#providing-a-custom-certificate-for-accessing-gitlab
-# https://gitlab.com/gitlab-org/charts/gitlab-runner/-/blob/main/values.yaml
 gitlab-runner:
-  install: true
-  logLevel: debug # Configure GitLab Runner's logging level. Available values are: debug, info, warn, error, fatal, panic => ref: https://docs.gitlab.com/runner/configuration/advanced-configuration.html#the-global-section
   certsSecretName: gitlab-wildcard-tls-chain
-  runners:
-    locked: false
-    # https://docs.gitlab.com/charts/charts/gitlab/gitlab-runner/#using-docker-in-docker
-    # https://docs.gitlab.com/runner/install/kubernetes.html#running-privileged-containers-for-the-runners
-    # https://adamrushuk.github.io/running-kind-in-gitlab-ci-on-kubernetes/
-    config: |
-      [[runners]]
-        [runners.kubernetes]
-          image = "docker:20.10.8"
-          poll_timeout = 180
-          privileged = true
-        [runners.kubernetes.volumes]
-          [[runners.kubernetes.volumes.empty_dir]]
-            name = "docker-certs"
-            mount_path = "/certs/client"
-            medium = "Memory"
-          [[runners.kubernetes.volumes.pvc]]
-            name = "gitlab-dind-var-lib"
-            mount_path = "/var/lib/docker"
-    executor: kubernetes # https://docs.gitlab.com/runner/executors/kubernetes.html
-
-## Persitent Volumes
 redis:
   master:
     persistence:
@@ -91,70 +25,23 @@ postgresql:
   persistence:
     size: 1Gi
 gitlab:
-  # https://docs.gitlab.com/charts/charts/gitlab/webservice
-  # https://gitlab.com/gitlab-org/charts/gitlab/-/blob/master/charts/gitlab/charts/webservice/values.yaml
   webservice:
-    enabled: true
     hpa:
       minReplicas: 1
       maxReplicas: 1
-    # nodeSelector:
-    #   app: gitlab
-  # https://docs.gitlab.com/charts/charts/gitlab/sidekiq
   sidekiq:
-    enabled: true
     minReplicas: 1
     maxReplicas: 1
-  # https://docs.gitlab.com/charts/charts/gitlab/gitaly
-  # https://gitlab.com/gitlab-org/charts/gitlab/-/blob/master/charts/gitlab/charts/gitaly/values.yaml
   gitaly:
     persistence:
       size: 1Gi
-  # https://docs.gitlab.com/charts/charts/gitlab/gitlab-shell
-  # https://gitlab.com/gitlab-org/charts/gitlab/-/blob/master/charts/gitlab/charts/gitlab-shell/values.yaml
   gitlab-shell:
-    enabled: true
     minReplicas: 1
     maxReplicas: 1
-    # networkpolicy:
-    #   enabled: false
-    #   ingress:
-    #     enabled: true
-    #     rules:
-    #       - from:
-    #         - ipBlock:
-    #             cidr: 0.0.0.0/0
-    #         ports:
-    #           - port: 22
-    #             protocol: TCP
-    #   egress:
-    #     enabled: true
-    #     rules:
-    #       - to:
-    #         - ipBlock:
-    #             cidr: 10.0.0.0/8
-    #         ports:
-    #           - port: 8181
-    #             protocol: TCP
-    #           - port: 8075
-    #             protocol: TCP
-    #           - port: 53
-    #             protocol: UDP
-
-  ## https://docs.gitlab.com/charts/charts/gitlab/gitlab-grafana
-  #   gitlab-grafana:
-
 minio:
   persistence:
     size: 1Gi
-
 registry:
-  enabled: true
-  maintenance:
-    readonly:
-      enabled: false
   hpa:
     minReplicas: 1
     maxReplicas: 1
-    cpu:
-      targetAverageUtilization: 75
