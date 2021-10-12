@@ -80,25 +80,7 @@ deploy-kube-prometheus-stack:
 	deploy_helm_chart --add-repo --pull-push-images
 	jq --null-input '{"apiVersion": "cert-manager.io/v1", "kind": "Issuer", "metadata":{"name": "selfsigned-issuer"}, "spec":{"selfSigned": {}} }' | yq e -P | kubectl apply --context $$KUBE_CONTEXT --namespace "$$HELM_NAMESPACE" -f -
 	domains=$$(jo array[]=alertmanager.$${KIND_CLUSTER_NAME}.lan array[]=grafana.$${KIND_CLUSTER_NAME}.lan array[]=prometheus.$${KIND_CLUSTER_NAME}.lan|jq '.array')
-	jq --null-input --arg name "$$HELM_NAMESPACE-tls-certificate" --arg domain "$$HELM_NAMESPACE.$${KIND_CLUSTER_NAME}.lan" --argjson domains "$${domains}" '{"apiVersion": "cert-manager.io/v1", "kind": "Certificate", "metadata":{"name": $$name}, "spec":{"secretName": $$name, "issuerRef": {"name": "selfsigned-issuer"}, commonName: $$domain, "dnsNames": $$domains } }' | yq e -P | kubectl apply --context $$KUBE_CONTEXT --namespace "$$HELM_NAMESPACE" -f -
-#################################################################################################################################
-import-kube-prometheus-stack-crt: ## import-kube-prometheus-stack-crt
-import-kube-prometheus-stack-crt:
-# kubectl get secrets/monitoring-tls-certificate --namespace=monitoring -o jsonpath="{.data.ca\.crt}" | base64 -d
-	set -e
-	cd $(ROOT_DIR)
-	source tools
-	eval_env_files .env helm-dependencies/kube-prometheus-stack.env
-	tempfile=$$(mktemp /tmp/crt.XXXXXXXXXX)
-	trap "rm -Rf $$tempfile" 0 2 3 15
-	file=monitoring.$${KIND_CLUSTER_NAME}.lan.crt
-	key=ca.crt
-	kubectl get secrets/monitoring-tls-certificate --context $${KUBE_CONTEXT} --namespace=$${HELM_NAMESPACE} -o jsonpath="{.data.$${key//./\\.}}" | base64 -d >> $$tempfile
-	sudo cp $$tempfile /usr/local/share/ca-certificates/$${file}
-	sudo update-ca-certificates
-	nb=$$(certutil -d sql:$$HOME/.pki/nssdb -L | sed -rn "/^$${file}\s+/p" | wc -l); until [[ $nb -eq 0 ]]; do sleep 1; certutil -d sql:$$HOME/.pki/nssdb -D -n "$${file}" && nb=$$(certutil -d sql:$$HOME/.pki/nssdb -L | sed -rn "/^$${file}\s+/p" | wc -l); done
-	certutil -d sql:$$HOME/.pki/nssdb -A -t "CT,c,c" -n "$${file}" -i $$tempfile
-	certutil -d sql:$$HOME/.pki/nssdb -L
+	jq --null-input --arg name "monitoring-tls-certificate" --arg domain "$$HELM_NAMESPACE.$${KIND_CLUSTER_NAME}.lan" --argjson domains "$${domains}" '{"apiVersion": "cert-manager.io/v1", "kind": "Certificate", "metadata":{"name": $$name}, "spec":{"secretName": $$name, "issuerRef": {"name": "selfsigned-issuer"}, commonName: $$domain, "dnsNames": $$domains } }' | yq e -P | kubectl apply --context $$KUBE_CONTEXT --namespace "$$HELM_NAMESPACE" -f -
 #################################################################################################################################
 deploy-cert-manager: ## deploy-cert-manager
 deploy-cert-manager:
@@ -170,6 +152,23 @@ gitlab-create-root-personal_access_tokens:
 # kubectl exec --context $${KUBE_CONTEXT} --namespace=$${HELM_NAMESPACE} -it $$(echo $$pod) -c task-runner -- gitlab-rake db:migrate
 # eval $$(cat .env) ; eval $$(cat helm-dependencies/gitlab.env) ; set +e; kubectl exec --context $${KUBE_CONTEXT} --namespace=$${HELM_NAMESPACE} -it $$(kubectl get pods --context $${KUBE_CONTEXT} -l app=task-runner -n $${HELM_NAMESPACE} -ojson|jq -r '.items[0].metadata.name') -c task-runner -- gitlab-rails runner "token = User.find_by_username('root').personal_access_tokens.create(scopes: [:api], name: 'Automation token'); token.set_token('$$GITLAB_TOKEN'); token.save!"; set -e
 #################################################################################################################################
+import-kube-prometheus-stack-crt: ## import-kube-prometheus-stack-crt
+import-kube-prometheus-stack-crt:
+	set -e
+	cd $(ROOT_DIR)
+	source tools
+	eval_env_files .env helm-dependencies/kube-prometheus-stack.env
+	tempfile=$$(mktemp /tmp/crt.XXXXXXXXXX)
+	trap "rm -Rf $$tempfile" 0 2 3 15
+	file=monitoring.$${KIND_CLUSTER_NAME}.lan.crt
+	key=ca.crt
+	kubectl get secrets/monitoring-tls-certificate --context $${KUBE_CONTEXT} --namespace=$${HELM_NAMESPACE} -o jsonpath="{.data.$${key//./\\.}}" | base64 -d >> $$tempfile
+	nb=$$(certutil -d sql:$$HOME/.pki/nssdb -L | sed -rn "/^$${file}\s+/p" | wc -l); until [[ $nb -eq 0 ]]; do sleep 1; certutil -d sql:$$HOME/.pki/nssdb -D -n "$${file}" && nb=$$(certutil -d sql:$$HOME/.pki/nssdb -L | sed -rn "/^$${file}\s+/p" | wc -l); done
+	certutil -d sql:$$HOME/.pki/nssdb -A -t "CT,c,c" -n "$${file}" -i $$tempfile
+	certutil -d sql:$$HOME/.pki/nssdb -L
+	sudo cp $$tempfile /usr/local/share/ca-certificates/$${file}
+	sudo update-ca-certificates
+#################################################################################################################################
 import-argocd-crt: ## import-argocd-crt
 import-argocd-crt:
 	set -e
@@ -181,11 +180,11 @@ import-argocd-crt:
 	file=argocd.$${KIND_CLUSTER_NAME}.lan.crt
 	key=ca.crt
 	kubectl get secrets/argocd-tls-certificate --context $${KUBE_CONTEXT} --namespace=$${HELM_NAMESPACE} -o jsonpath="{.data.$${key//./\\.}}" | base64 -d >> $$tempfile
-	sudo cp $$tempfile /usr/local/share/ca-certificates/$${file}
-	sudo update-ca-certificates
 	nb=$$(certutil -d sql:$$HOME/.pki/nssdb -L | sed -rn "/^$${file}\s+/p" | wc -l); until [[ $nb -eq 0 ]]; do sleep 1; certutil -d sql:$$HOME/.pki/nssdb -D -n "$${file}" && nb=$$(certutil -d sql:$$HOME/.pki/nssdb -L | sed -rn "/^$${file}\s+/p" | wc -l); done
 	certutil -d sql:$$HOME/.pki/nssdb -A -t "CT,c,c" -n "$${file}" -i $$tempfile
 	certutil -d sql:$$HOME/.pki/nssdb -L
+	sudo cp $$tempfile /usr/local/share/ca-certificates/$${file}
+	sudo update-ca-certificates
 #################################################################################################################################
 import-gitlab-crt: ## import-gitlab-crt
 import-gitlab-crt:
@@ -198,28 +197,12 @@ import-gitlab-crt:
 	key=ca.crt
 	file=gitlab.$${KIND_CLUSTER_NAME}.lan.crt
 	kubectl get secrets/gitlab-tls-certificate --context $${KUBE_CONTEXT} --namespace=$${HELM_NAMESPACE} -o jsonpath="{.data.$${key//./\\.}}" | base64 -d > $$tempfile
-	sudo cp $$tempfile /usr/local/share/ca-certificates/$${file}
-	sudo update-ca-certificates
 	nb=$$(certutil -d sql:$$HOME/.pki/nssdb -L | sed -rn "/^$${file}\s+/p" | wc -l); until [[ $nb -eq 0 ]]; do sleep 1; certutil -d sql:$$HOME/.pki/nssdb -D -n "$${file}" && nb=$$(certutil -d sql:$$HOME/.pki/nssdb -L | sed -rn "/^$${file}\s+/p" | wc -l); done
 	certutil -d sql:$$HOME/.pki/nssdb -A -t "CT,c,c" -n "$${file}" -i $$tempfile
 	certutil -d sql:$$HOME/.pki/nssdb -L
+	sudo cp $$tempfile /usr/local/share/ca-certificates/$${file}
+	sudo update-ca-certificates
 #################################################################################################################################
-# https://superuser.com/questions/437330/how-do-you-add-a-certificate-authority-ca-to-ubuntu
-install-cert-tools: ## install-cert-tools
-install-cert-tools:
-	set -e
-	packages="p11-kit libnss3 libnss3-tools"; \
-	packages_list=''; \
-	for package in $$packages; do [ -z "`dpkg -l | grep -P "ii\s+$$package(?:[\s+|:])" || :`" ] && packages_list="$$packages_list $$package"; done
-	echo $$packages_list; \
-	if ! [ -z "$$packages_list" ]; then \
-		sudo /bin/bash -c "apt update && apt-get --no-install-recommends install -y $$packages_list"; \
-	fi
-	find / -type f ! -path '/snap/*' -name "libnssckbi.so" 2>/dev/null | while read line; do \
-		sudo mv $$line $${line}.bak; \
-		sudo ln -s /usr/lib/$$(uname -m)-linux-gnu/pkcs11/p11-kit-trust.so $$line; \
-	done
-
 show-creds: ## show-creds
 show-creds:
 	set -e
@@ -368,7 +351,7 @@ install-kind:
 
 install-packages: ## install-packages
 install-packages:
-	packages="openssl kubectl jq jo dnsutils iputils-ping netcat procps curl mariadb-client"; \
+	packages="openssl kubectl jq jo dnsutils iputils-ping netcat procps curl mariadb-client libnss3-tools"; \
 	packages_list=''; \
 	for package in $$packages; do [ -z "`dpkg -l | grep -P "ii\s+$$package(?:[\s+|:])" || :`" ] && packages_list="$$packages_list $$package"; done
 	if ! [ -z "$$packages_list" ]; then \
