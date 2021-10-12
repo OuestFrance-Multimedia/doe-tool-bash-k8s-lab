@@ -4,9 +4,11 @@ global:
   shell:
     port: 22
   ingress:
-    tls:
-      enabled: true
-      secretName: gitlab-tls-certificate
+    # https://docs.gitlab.com/charts/charts/globals#configure-ingress-settings
+    # https://docs.gitlab.com/charts/charts/globals#globalingressconfigurecertmanager
+    # tls:
+    #   enabled: true
+    #   secretName: gitlab-tls-certificate
     configureCertmanager: false
 nginx-ingress:
   controller:
@@ -18,8 +20,13 @@ certmanager:
   install: false
 prometheus:
   install: false
+# https://gitlab.com/gitlab-org/charts/gitlab-runner/-/blob/main/values.yaml
 gitlab-runner:
-  certsSecretName: gitlab-wildcard-tls-chain
+  install: false
+  # https://docs.gitlab.com/charts/installation/tls.html#option-4-use-auto-generated-self-signed-wildcard-certificate
+  # The RELEASE-wildcard-tls-chain contains both the CA certificate and the wildcard certificate which you can also use directly for GitLab Runner via gitlab-runner.certsSecretName=RELEASE-wildcard-tls-chain
+  # https://docs.gitlab.com/runner/configuration/tls-self-signed.html#supported-options-for-self-signed-certificates
+  certsSecretName: gitlab-wildcard-tls-chain #gitlab-tls-certificate # gitlab-wildcard-tls-chain
   logLevel: debug
   runners:
     locked: false
@@ -47,6 +54,9 @@ postgresql:
     size: 1Gi
 gitlab:
   webservice:
+    ingress:
+      tls:
+        secretName: gitlab-tls-certificate
     hpa:
       minReplicas: 1
       maxReplicas: 1
@@ -60,9 +70,15 @@ gitlab:
     minReplicas: 1
     maxReplicas: 1
 minio:
+  ingress:
+    tls:
+      secretName: gitlab-tls-certificate
   persistence:
     size: 1Gi
 registry:
+  ingress:
+    tls:
+      secretName: gitlab-tls-certificate
   hpa:
     minReplicas: 1
     maxReplicas: 1
