@@ -345,6 +345,7 @@ make destroy
 ## [Metrics Server](https://github.com/kubernetes-sigs/metrics-server)
 
 Metrics Server is a scalable, efficient source of container resource metrics for Kubernetes built-in autoscaling pipelines.
+<p align="center"><a href="https://github.com/kubernetes-sigs/metrics-server"><img alt="Metrics Server" src="https://static.packt-cdn.com/products/9781838647513/graphics/assets/b3d2c07d-2505-4373-ae4c-181a83afb8c0.png" width="500px" /></a></p>
 
 Metrics Server collects resource metrics from Kubelets and exposes them in Kubernetes apiserver through Metrics API for use by [Horizontal Pod Autoscaler](https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/) and Vertical Pod Autoscaler. Metrics API can also be accessed by kubectl top, making it easier to debug autoscaling pipelines.
 
@@ -387,6 +388,8 @@ extraArgs:
 
 MetalLB is a load-balancer implementation for bare metal Kubernetes clusters, using standard routing protocols.
 It handles the ServiceType: Loadbalancer.
+
+<p align="center"><a href="https://metallb.universe.tf/"><img alt="MetalLB" src="https://banzaicloud.com/img/blog/multi-cluster-testing/metallb-l2.gif" width="900px" /></a></p>
 
 We can use MetalLB in order to reserve an IP Address in docker network and expose our kubernetes services.
 
@@ -448,7 +451,7 @@ service:
 
 cert-manager is a native Kubernetes certificate management controller. It can help with issuing certificates from a variety of sources, such as Let’s Encrypt, HashiCorp Vault, Venafi, a simple signing key pair, or self signed.
 
-<p align="center"><a href="https://cert-manager.io/docs/"><img alt="Moby" src="https://cert-manager.io/images/high-level-overview.svg" width="700px" /></a></p>
+<p align="center"><a href="https://cert-manager.io/docs/"><img alt="Cert Manager" src="https://cert-manager.io/images/high-level-overview.svg" width="700px" /></a></p>
 
 cert-manager is deploy with Helm Chart: https://hub.kubeapps.com/charts/bitnami/cert-manager/0.1.20
 
