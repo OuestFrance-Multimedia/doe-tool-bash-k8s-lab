@@ -80,7 +80,7 @@ deploy-kube-prometheus-stack:
 	deploy_helm_chart --add-repo --pull-push-images --debug
 	jq --null-input '{"apiVersion": "cert-manager.io/v1", "kind": "Issuer", "metadata":{"name": "selfsigned-issuer"}, "spec":{"selfSigned": {}} }' | yq e -P | kubectl apply --context $$KUBE_CONTEXT --namespace "$$HELM_NAMESPACE" -f -
 	domains=$$(jo array[]=alertmanager.$${KIND_CLUSTER_NAME}.lan array[]=grafana.$${KIND_CLUSTER_NAME}.lan array[]=prometheus.$${KIND_CLUSTER_NAME}.lan|jq '.array')
-	jq --null-input --arg name "monitoring-tls-certificate" --arg domain "$$HELM_NAMESPACE.$${KIND_CLUSTER_NAME}.lan" --argjson domains "$${domains}" '{"apiVersion": "cert-manager.io/v1", "kind": "Certificate", "metadata":{"name": $$name}, "spec":{"secretName": $$name, "issuerRef": {"name": "selfsigned-issuer"}, commonName: $$domain, "dnsNames": $$domains } }' | yq e -P | kubectl apply --context $$KUBE_CONTEXT --namespace "$$HELM_NAMESPACE" -f -
+	jq --null-input --arg name "monitoring-tls-certificate" --arg domain "$${HELM_NAMESPACE}.$${KIND_CLUSTER_NAME}.lan" --argjson domains "$${domains}" '{"apiVersion": "cert-manager.io/v1", "kind": "Certificate", "metadata":{"name": $$name}, "spec":{"secretName": $$name, "issuerRef": {"name": "selfsigned-issuer"}, commonName: $$domain, "dnsNames": $$domains } }' | yq e -P | kubectl apply --context $$KUBE_CONTEXT --namespace "$$HELM_NAMESPACE" -f -
 #################################################################################################################################
 deploy-cert-manager: ## deploy-cert-manager
 deploy-cert-manager:
@@ -106,7 +106,7 @@ deploy-argocd:
 	eval_env_files .env helm-dependencies/argocd.env
 	deploy_helm_chart --add-repo --pull-push-images --debug
 	jq --null-input '{"apiVersion": "cert-manager.io/v1", "kind": "Issuer", "metadata":{"name": "selfsigned-issuer"}, "spec":{"selfSigned": {}} }' | yq e -P | kubectl apply --context $$KUBE_CONTEXT --namespace "$$HELM_NAMESPACE" -f -
-	jq --null-input --arg name "$$HELM_NAMESPACE-tls-certificate" --arg domain "$$HELM_NAMESPACE.$${KIND_CLUSTER_NAME}.lan" '{"apiVersion": "cert-manager.io/v1", "kind": "Certificate", "metadata":{"name": $$name}, "spec":{"secretName": $$name, "issuerRef": {"name": "selfsigned-issuer"}, commonName: $$domain, "dnsNames": [$$domain]} }' | yq e -P | kubectl apply --context $$KUBE_CONTEXT --namespace "$$HELM_NAMESPACE" -f -
+	jq --null-input --arg name "$$HELM_NAMESPACE-tls-certificate" --arg domain "$${HELM_NAMESPACE}.$${KIND_CLUSTER_NAME}.lan" '{"apiVersion": "cert-manager.io/v1", "kind": "Certificate", "metadata":{"name": $$name}, "spec":{"secretName": $$name, "issuerRef": {"name": "selfsigned-issuer"}, commonName: $$domain, "dnsNames": [$$domain]} }' | yq e -P | kubectl apply --context $$KUBE_CONTEXT --namespace "$$HELM_NAMESPACE" -f -
 #################################################################################################################################
 deploy-gitlab: ## deploy-gitlab
 deploy-gitlab:
@@ -119,7 +119,9 @@ deploy-gitlab:
 	jq --null-input --arg namespace "$$HELM_NAMESPACE" '{"apiVersion":"v1","kind":"PersistentVolumeClaim","metadata":{"name":"gitlab-dind-var-lib","namespace":$$namespace},"spec":{"accessModes":["ReadWriteOnce"],"resources":{"requests":{"storage":"5Gi"}},"storageClassName":"standard","volumeMode":"Filesystem"}}' | yq e -P | kubectl apply --context $$KUBE_CONTEXT --namespace "$$HELM_NAMESPACE" -f -
 	jq --null-input '{"apiVersion": "cert-manager.io/v1", "kind": "Issuer", "metadata":{"name": "selfsigned-issuer"}, "spec":{"selfSigned": {}} }' | yq e -P | kubectl apply --context $$KUBE_CONTEXT --namespace "$$HELM_NAMESPACE" -f -
 	domains=$$(jo array[]=gitlab.$${KIND_CLUSTER_NAME}.lan array[]=minio.$${KIND_CLUSTER_NAME}.lan array[]=registry.$${KIND_CLUSTER_NAME}.lan|jq '.array')
-	jq --null-input --arg name "gitlab-tls-certificate" --arg domain "$$HELM_NAMESPACE.$${KIND_CLUSTER_NAME}.lan" --argjson domains "$${domains}" '{"apiVersion": "cert-manager.io/v1", "kind": "Certificate", "metadata":{"name": $$name}, "spec":{"secretName": $$name, "issuerRef": {"name": "selfsigned-issuer"}, commonName: $$domain, "dnsNames": $$domains } }' | yq e -P | kubectl apply --context $$KUBE_CONTEXT --namespace "$$HELM_NAMESPACE" -f -
+	jq --null-input --arg name "gitlab-tls-certificate" --arg domain "$${HELM_NAMESPACE}.$${KIND_CLUSTER_NAME}.lan" --argjson domains "$${domains}" '{"apiVersion": "cert-manager.io/v1", "kind": "Certificate", "metadata":{"name": $$name}, "spec":{"secretName": $$name, "issuerRef": {"name": "selfsigned-issuer"}, commonName: $$domain, "dnsNames": $$domains } }' | yq e -P | kubectl apply --context $$KUBE_CONTEXT --namespace "$$HELM_NAMESPACE" -f -
+# kubectl get --context $$KUBE_CONTEXT --namespace "$$HELM_NAMESPACE" secrets/gitlab-tls-certificate -o jsonpath="{.data.tls\.crt}" | base64 -d > "$${HELM_NAMESPACE}.$${KIND_CLUSTER_NAME}.lan.crt"
+# kubectl create --context $$KUBE_CONTEXT --namespace "$$HELM_NAMESPACE" secret generic gitlab-runner-certs --from-file=$${HELM_NAMESPACE}.$${KIND_CLUSTER_NAME}.lan.crt=$${HELM_NAMESPACE}.$${KIND_CLUSTER_NAME}.lan.crt
 	deploy_helm_chart --add-repo --pull-push-images --debug
 	$(MAKE) gitlab-create-root-personal_access_tokens
 #################################################################################################################################
