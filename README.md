@@ -544,15 +544,12 @@ configs:
 
 The gitlab chart is the best way to operate GitLab on Kubernetes. It contains all the required components to get started, and can scale to large deployments.
 
+<p align="center"><a href="https://docs.gitlab.com/charts/"><img alt="GitLab" src="https://codebabel.com/wp-content/uploads/2018/07/GITLAB.gif" width="900px" /></a></p>
+
 Some of the key benefits of this chart and corresponding containers are:
 - Improved scalability and reliability.
 - No requirement for root privileges.
 - Utilization of object storage instead of NFS for storage.
-
-
-
-<p align="center"><a href="https://docs.gitlab.com/charts/"><img alt="GitLab" src="https://codebabel.com/wp-content/uploads/2018/07/GITLAB.gif" width="900px" /></a></p>
-
 
 gitlab is deploy with Helm Chart: https://hub.kubeapps.com/charts/gitlab/gitlab/5.3.2
 
