@@ -210,26 +210,29 @@ Connection to 172.17.255.1 80 port [tcp/domain] succeeded!
 ## Environment variables
 
 Create `.env` file with following vars:
-| var                          	| definition                               	| more                                       	| example                  	|
-|------------------------------	|------------------------------------------	|--------------------------------------------	|--------------------------	|
-| KIND_CLUSTER_NAME            	| cluster name                             	|                                            	| changeme                 	|
-| KIND_CLUSTER_IMAGE           	| kubernetes version                       	| https://hub.docker.com/r/kindest/node/tags 	| kindest/node:v1.19.7     	|
-| KUBE_CONTEXT            	    | kubernetes context                        |                                            	| kind-${KIND_CLUSTER_NAME} |
-| NETWORK_PREFIX               	| network prefix                           	| CIDR: 172.17.0.0/16                        	| 172.17                   	|
-| METALLB_SPEAKER_SECRET_VALUE 	| random 256 character alphanumeric string 	| $(openssl rand -base64 256 | tr -d '\n')    | bpP0AGV07oQt9jjNINJQFQ== 	|
-| ARGOCD_SERVER_ADMIN_PASSWORD 	| random 14 character alphanumeric string 	| $(openssl rand -base64 14 | tr -d '\n')    	| zffspkjxqiMPoOtgaAQ=      |
-| GRAFANA_ADMIN_PASSWORD 	      | random 14 character alphanumeric string 	| $(openssl rand -base64 14 | tr -d '\n')    	| B1aMuF8gHiPXPmH0MX8=      |
+| var                          	| definition                               	| more                                       	                       | example                  	 |
+|------------------------------	|------------------------------------------	|------------------------------------------------------------------- |---------------------------- |
+| KIND_CLUSTER_NAME            	| cluster name                             	|                                            	                       | changeme                 	 |
+| KIND_CLUSTER_IMAGE           	| kubernetes version                       	| https://hub.docker.com/r/kindest/node/tags 	                       | kindest/node:v1.19.7     	 |
+| KUBE_CONTEXT            	    | kubernetes context                        |                                            	                       | kind-${KIND_CLUSTER_NAME}   |
+| NETWORK_PREFIX               	| network prefix                           	| CIDR: 172.17.0.0/16                        	                       | 172.17                   	 |
+| METALLB_SPEAKER_SECRET_VALUE 	| random 256 character alphanumeric string 	| $(openssl rand -base64 256\|tr -d '\n')                            | bpP0AGV07oQt9jjNINJQFQ== 	 |
+| ARGOCD_SERVER_ADMIN_PASSWORD 	| random 14 character alphanumeric string 	| \$(< /dev/urandom tr -dc _A-Z-a-z-0-9 \| head -c${1:-20};echo;)    | UA31wt3D5gCDX-idW-BK        |
+| GRAFANA_ADMIN_PASSWORD 	      | random 14 character alphanumeric string 	| \$(< /dev/urandom tr -dc _A-Z-a-z-0-9 \| head -c${1:-20};echo;)    | LvxiXjaNTnF3oZiiKA9Y        |
+| GITLAB_TOKEN 	                | random 14 character alphanumeric string 	| \$(< /dev/urandom tr -dc _A-Z-a-z-0-9 \| head -c${1:-20};echo;)    | iew6DX_otY1pDfzgmFq-        |
 
 Example:
 ```bash
-cat << EOF > .env
 KIND_CLUSTER_NAME=changeme
+cat << EOF > .env
+KIND_CLUSTER_NAME=$KIND_CLUSTER_NAME
 KIND_CLUSTER_IMAGE=kindest/node:v1.19.7
 KUBE_CONTEXT=kind-${KIND_CLUSTER_NAME}
 NETWORK_PREFIX=172.17
 METALLB_SPEAKER_SECRET_VALUE=$(openssl rand -base64 256|tr -d '\n')
-ARGOCD_SERVER_ADMIN_PASSWORD=$(openssl rand -base64 14 | tr -d '\n')
-GRAFANA_ADMIN_PASSWORD=$(openssl rand -base64 14 | tr -d '\n')
+ARGOCD_SERVER_ADMIN_PASSWORD=$(< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c${1:-20};echo;)
+GRAFANA_ADMIN_PASSWORD=$(< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c${1:-20};echo;)
+GITLAB_TOKEN=$(< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c${1:-20};echo;)
 EOF
 ```
 
@@ -286,12 +289,13 @@ Use the following command in order to initialize all-in-one steps
 make create
 ```
 
-| name                              	| type    	| information                                	| install                     	|
-|-----------------------------------	|---------	|--------------------------------------------	|------------------------------	|
-| docker-network                     	| chart   	| create a docker network                     | `make create-docker-network` 	|
-| kind                               	| chart   	| create a kind cluster                     	| `make create-kind`           	|
-| [MetalLB](#metallb)               	| chart   	| deploy MetalLB into cluster                	| `make deploy-metallb`        	|
-| [Metrics Server](#metrics-server) 	| chart   	| deploy Metrics Server into cluster        	| `make deploy-metrics-server` 	|
+| name                              	          | type    	| information                                	| install                     	|
+|-----------------------------------	          |---------	|--------------------------------------------	|------------------------------	|
+| docker-network                     	          | chart   	| create a docker network                     | `make create-docker-network` 	|
+| kind                               	          | chart   	| create a kind cluster                     	| `make create-kind`           	|
+| [Metrics Server](#metrics-server) 	          | chart   	| deploy Metrics Server into cluster        	| `make deploy-metrics-server` 	          |
+| [MetalLB](#metallb)               	          | chart   	| deploy MetalLB into cluster                	| `make deploy-metallb`        	          |
+| [Nginx Ingress Controller](#nginx-ingress-controller) 	| chart   	| deploy Metrics Server into cluster        	| `make deploy-nginx-ingress-controller` 	|
 
 ![create lab demo GIF](.github/create.gif)
 
@@ -300,6 +304,47 @@ make create
 make destroy
 ```
 ![destroy lab demo GIF](.github/destroy.gif)
+
+## [Metrics Server](https://github.com/kubernetes-sigs/metrics-server)
+
+Metrics Server is a scalable, efficient source of container resource metrics for Kubernetes built-in autoscaling pipelines.
+
+Metrics Server collects resource metrics from Kubelets and exposes them in Kubernetes apiserver through Metrics API for use by [Horizontal Pod Autoscaler](https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/) and Vertical Pod Autoscaler. Metrics API can also be accessed by kubectl top, making it easier to debug autoscaling pipelines.
+
+```bash
+$ kubectl top pods --all-namespaces
+NAMESPACE     NAME                                                              CPU(cores)   MEMORY(bytes)   
+kube-system   alb-ingress-controller-aws-alb-ingress-controller-67d7cf85lwdg2   3m           10Mi            
+kube-system   aws-node-9nmnw                                                    2m           20Mi            
+kube-system   coredns-7bcbfc4774-q4pjj                                          2m           7Mi             
+kube-system   coredns-7bcbfc4774-wwlcr                                          2m           7Mi             
+kube-system   external-dns-54df666786-2ld9w                                     1m           12Mi            
+kube-system   kube-proxy-ss87v                                                  2m           10Mi            
+kube-system   kubernetes-dashboard-5478c45897-fcm48                             1m           12Mi            
+kube-system   metrics-server-5f64dbfb9d-fnk5r                                   1m           12Mi            
+kube-system   tiller-deploy-85744d9bfb-64pcr                                    1m           29Mi
+```
+
+Metrics Server is not meant for non-autoscaling purposes. For example, don't use it to forward metrics to monitoring solutions, or as a source of monitoring solution metrics.
+
+Metrics Server offers:
+
+- A single deployment that works on most clusters (see Requirements)
+- Fast autoscaling, collecting metrics every 15 seconds.
+- Resource efficiency, using 1 mili core of CPU and 2 MB of memory for each node in a cluster.
+- Scalable support up to 5,000 node clusters.
+
+Metrics Server is deploy with Helm Chart: https://hub.kubeapps.com/charts/bitnami/metrics-server/5.8.9
+
+Example of an YAML config file:
+```yaml
+---
+apiService:
+  create: true
+extraArgs:
+  kubelet-insecure-tls: true
+  kubelet-preferred-address-types: InternalIP
+```
 
 ## [MetalLB](https://metallb.universe.tf/)
 
@@ -344,36 +389,11 @@ speaker:
     1Xa2rGCUkJ/S2lVwc4EzaQ==
 ```
 
-## [Metrics Server](https://github.com/kubernetes-sigs/metrics-server)
+## [Nginx Ingress Controller](https://kubernetes.github.io/ingress-nginx/)
 
-Metrics Server is a scalable, efficient source of container resource metrics for Kubernetes built-in autoscaling pipelines.
+Ingress-nginx is an Ingress controller for Kubernetes using NGINX as a reverse proxy and load balancer.
 
-Metrics Server collects resource metrics from Kubelets and exposes them in Kubernetes apiserver through Metrics API for use by [Horizontal Pod Autoscaler](https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/) and Vertical Pod Autoscaler. Metrics API can also be accessed by kubectl top, making it easier to debug autoscaling pipelines.
-
-```bash
-$ kubectl top pods --all-namespaces
-NAMESPACE     NAME                                                              CPU(cores)   MEMORY(bytes)   
-kube-system   alb-ingress-controller-aws-alb-ingress-controller-67d7cf85lwdg2   3m           10Mi            
-kube-system   aws-node-9nmnw                                                    2m           20Mi            
-kube-system   coredns-7bcbfc4774-q4pjj                                          2m           7Mi             
-kube-system   coredns-7bcbfc4774-wwlcr                                          2m           7Mi             
-kube-system   external-dns-54df666786-2ld9w                                     1m           12Mi            
-kube-system   kube-proxy-ss87v                                                  2m           10Mi            
-kube-system   kubernetes-dashboard-5478c45897-fcm48                             1m           12Mi            
-kube-system   metrics-server-5f64dbfb9d-fnk5r                                   1m           12Mi            
-kube-system   tiller-deploy-85744d9bfb-64pcr                                    1m           29Mi
-```
-
-Metrics Server is not meant for non-autoscaling purposes. For example, don't use it to forward metrics to monitoring solutions, or as a source of monitoring solution metrics.
-
-Metrics Server offers:
-
-- A single deployment that works on most clusters (see Requirements)
-- Fast autoscaling, collecting metrics every 15 seconds.
-- Resource efficiency, using 1 mili core of CPU and 2 MB of memory for each node in a cluster.
-- Scalable support up to 5,000 node clusters.
-
-MetalLB is deploy with Helm Chart: https://hub.kubeapps.com/charts/bitnami/metrics-server/5.8.9
+Ingress-nginx is deploy with Helm Chart: https://hub.kubeapps.com/charts/bitnami/nginx-ingress-controller/7.6.21
 
 Example of an YAML config file:
 ```yaml
@@ -383,6 +403,8 @@ apiService:
 extraArgs:
   kubelet-insecure-tls: true
   kubelet-preferred-address-types: InternalIP
+service:
+  loadBalancerIP: 172.17.255.200
 ```
 
 # DNS
