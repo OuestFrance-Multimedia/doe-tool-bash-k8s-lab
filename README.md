@@ -433,6 +433,8 @@ speaker:
 
 Ingress-nginx is an Ingress controller for Kubernetes using NGINX as a reverse proxy and load balancer.
 
+<p align="center"><a href="https://kubernetes.github.io/ingress-nginx/"><img alt="NGINX Ingress Controller" src="https://www.nginx.com/wp-content/uploads/2018/12/NGINX-Ingress-Controller-4-services_social.png" width="900px" /></a></p>
+
 Ingress-nginx is deploy with Helm Chart: https://hub.kubeapps.com/charts/bitnami/nginx-ingress-controller/7.6.21
 
 Example of an YAML config file:
