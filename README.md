@@ -320,6 +320,8 @@ make create
 | [MetalLB](#metallb)               	          | chart   	| deploy MetalLB into cluster                	| `make deploy-metallb`        	          |
 | [Nginx Ingress Controller](#nginx-ingress-controller) 	| chart   	| deploy Metrics Server into cluster        	| `make deploy-nginx-ingress-controller` 	|
 | [Cert Manager](#cert-manager) 	| chart   	| deploy Cert Manager into cluster        	| `make deploy-cert-manager` 	|
+| [Cert Manager](#kube-prometheus-stack) 	| chart   	| deploy Cert Manager into cluster        	| `make deploy-kube-prometheus-stack` 	|
+
 
 ![create lab demo GIF](.github/create.gif)
 
@@ -441,6 +443,54 @@ Example of an YAML config file:
 ```yaml
 ---
 installCRDs: true
+```
+
+## [kube-prometheus-stack](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack)
+
+Installs the kube-prometheus stack, a collection of Kubernetes manifests, Grafana dashboards, and Prometheus rules combined with documentation and scripts to provide easy to operate end-to-end Kubernetes cluster monitoring with Prometheus using the Prometheus Operator.
+
+kube-prometheus-stack is deploy with Helm Chart: https://hub.kubeapps.com/charts/prometheus-community/kube-prometheus-stack/18.0.3
+
+Example of an YAML config file:
+```yaml
+---
+grafana:
+  adminPassword: changeme
+alertmanager:
+  ingress:
+    enabled: true
+    annotations:
+      kubernetes.io/ingress.class: nginx
+    pathType: Prefix
+    hosts:
+      - alertmanager.changeme.lan
+    tls:
+    - secretName: monitoring-tls-certificate
+      hosts:
+      - alertmanager.changeme.lan
+grafana:
+  ingress:
+    enabled: true
+    annotations:
+      kubernetes.io/ingress.class: nginx
+    hosts:
+      - grafana.changeme.lan
+    tls:
+    - secretName: monitoring-tls-certificate
+      hosts:
+      - grafana.changeme.lan
+prometheus:
+  ingress:
+    enabled: true
+    annotations:
+      kubernetes.io/ingress.class: nginx
+    pathType: Prefix
+    hosts:
+      - prometheus.changeme.lan
+    tls:
+    - secretName: monitoring-tls-certificate
+      hosts:
+      - prometheus.changeme.lan
 ```
 
 # DNS
