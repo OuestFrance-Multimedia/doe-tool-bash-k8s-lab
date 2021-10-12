@@ -345,7 +345,7 @@ make destroy
 ## [Metrics Server](https://github.com/kubernetes-sigs/metrics-server)
 
 Metrics Server is a scalable, efficient source of container resource metrics for Kubernetes built-in autoscaling pipelines.
-<p align="center"><a href="https://github.com/kubernetes-sigs/metrics-server"><img alt="Metrics Server" src="https://static.packt-cdn.com/products/9781838647513/graphics/assets/b3d2c07d-2505-4373-ae4c-181a83afb8c0.png" width="500px" /></a></p>
+<p align="center"><a href="https://github.com/kubernetes-sigs/metrics-server"><img alt="Metrics Server" src=".github/metrics-server.png" width="500px" /></a></p>
 
 Metrics Server collects resource metrics from Kubelets and exposes them in Kubernetes apiserver through Metrics API for use by [Horizontal Pod Autoscaler](https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/) and Vertical Pod Autoscaler. Metrics API can also be accessed by kubectl top, making it easier to debug autoscaling pipelines.
 
