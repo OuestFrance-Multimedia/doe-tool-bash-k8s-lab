@@ -319,6 +319,7 @@ make create
 | [Metrics Server](#metrics-server) 	          | chart   	| deploy Metrics Server into cluster        	| `make deploy-metrics-server` 	          |
 | [MetalLB](#metallb)               	          | chart   	| deploy MetalLB into cluster                	| `make deploy-metallb`        	          |
 | [Nginx Ingress Controller](#nginx-ingress-controller) 	| chart   	| deploy Metrics Server into cluster        	| `make deploy-nginx-ingress-controller` 	|
+| [Cert Manager](#cert-manager) 	| chart   	| deploy Cert Manager into cluster        	| `make deploy-cert-manager` 	|
 
 ![create lab demo GIF](.github/create.gif)
 
@@ -428,6 +429,18 @@ extraArgs:
   kubelet-preferred-address-types: InternalIP
 service:
   loadBalancerIP: 172.17.255.200
+```
+
+## [Cert Manager](https://cert-manager.io/docs/)
+
+cert-manager is a native Kubernetes certificate management controller. It can help with issuing certificates from a variety of sources, such as Let’s Encrypt, HashiCorp Vault, Venafi, a simple signing key pair, or self signed.
+
+cert-manager is deploy with Helm Chart: https://hub.kubeapps.com/charts/bitnami/cert-manager/0.1.20
+
+Example of an YAML config file:
+```yaml
+---
+installCRDs: true
 ```
 
 # DNS
