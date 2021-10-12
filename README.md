@@ -517,7 +517,22 @@ Argo CD is deploy with Helm Chart: https://hub.kubeapps.com/charts/argocd/argo-c
 Example of an YAML config file:
 ```yaml
 ---
-
+server:
+  extraArgs:
+    - --insecure
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    hosts:
+      - argocd.changeme.lan
+    tls:
+    - secretName: argocd-tls-certificate
+      hosts:
+      - argocd.changeme.lan
+configs:
+  secret:
+    argocdServerAdminPassword: $2a$10$f0M65D9v5L2Tk83xDZjzneOe/OWxlIqfDCGJHR2ysUPuNoOGSC0V2
+    argocdServerAdminPasswordMtime: 2021-10-12T17:53:40CEST
 ```
 
 ## [GitLab cloud native Helm Chart](https://docs.gitlab.com/charts/)
