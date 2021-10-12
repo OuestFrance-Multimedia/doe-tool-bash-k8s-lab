@@ -320,7 +320,7 @@ make create
 | [MetalLB](#metallb)               	          | chart   	| deploy MetalLB into cluster                	| `make deploy-metallb`        	          |
 | [Nginx Ingress Controller](#nginx-ingress-controller) 	| chart   	| deploy Metrics Server into cluster        	| `make deploy-nginx-ingress-controller` 	|
 | [Cert Manager](#cert-manager) 	| chart   	| deploy Cert Manager into cluster        	| `make deploy-cert-manager` 	|
-| [Cert Manager](#kube-prometheus-stack) 	| chart   	| deploy Cert Manager into cluster        	| `make deploy-kube-prometheus-stack` 	|
+| [kube-prometheus stack](#kube-prometheus-stack) 	| chart   	| deploy kube-prometheus stack into cluster        	| `make deploy-kube-prometheus-stack` 	|
 
 
 ![create lab demo GIF](.github/create.gif)
