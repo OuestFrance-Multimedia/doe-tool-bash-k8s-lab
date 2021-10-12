@@ -312,15 +312,15 @@ Use the following command in order to initialize all-in-one steps
 make create
 ```
 
-| name                              	          | type    	| information                                	| install                     	|
-|-----------------------------------	          |---------	|--------------------------------------------	|------------------------------	|
-| docker-network                     	          | chart   	| create a docker network                     | `make create-docker-network` 	|
-| kind                               	          | chart   	| create a kind cluster                     	| `make create-kind`           	|
-| [Metrics Server](#metrics-server) 	          | chart   	| deploy Metrics Server into cluster        	| `make deploy-metrics-server` 	          |
-| [MetalLB](#metallb)               	          | chart   	| deploy MetalLB into cluster                	| `make deploy-metallb`        	          |
-| [Nginx Ingress Controller](#nginx-ingress-controller) 	| chart   	| deploy Metrics Server into cluster        	| `make deploy-nginx-ingress-controller` 	|
-| [Cert Manager](#cert-manager) 	| chart   	| deploy Cert Manager into cluster        	| `make deploy-cert-manager` 	|
-| [kube-prometheus stack](#kube-prometheus-stack) 	| chart   	| deploy kube-prometheus stack into cluster        	| `make deploy-kube-prometheus-stack` 	|
+| name                              	                  | type    	| information                                	| install                     	          |
+|-----------------------------------	                  |---------	|--------------------------------------------	|---------------------------------------- |
+| docker-network                     	                  | cli   	  | create a docker network                     | `make create-docker-network` 	          |
+| kind                               	                  | cli   	  | create a kind cluster                     	| `make create-kind`           	          |
+| [Metrics Server](#metrics-server) 	                  | chart   	| deploy Metrics Server into cluster        	| `make deploy-metrics-server` 	          |
+| [MetalLB](#metallb)               	                  | chart   	| deploy MetalLB into cluster                	| `make deploy-metallb`        	          |
+| [Nginx Ingress Controller](#nginx-ingress-controller) | chart   	| deploy Metrics Server into cluster        	| `make deploy-nginx-ingress-controller` 	|
+| [Cert Manager](#cert-manager) 	                      | chart     | deploy Cert Manager into cluster        	  | `make deploy-cert-manager` 	            |
+| [kube-prometheus stack](#kube-prometheus-stack)       | chart   	| deploy kube-prometheus stack into cluster   | `make deploy-kube-prometheus-stack` 	  |
 
 
 ![create lab demo GIF](.github/create.gif)
