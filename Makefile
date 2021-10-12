@@ -120,8 +120,6 @@ deploy-gitlab:
 	jq --null-input '{"apiVersion": "cert-manager.io/v1", "kind": "Issuer", "metadata":{"name": "selfsigned-issuer"}, "spec":{"selfSigned": {}} }' | yq e -P | kubectl apply --context $$KUBE_CONTEXT --namespace "$$HELM_NAMESPACE" -f -
 	domains=$$(jo array[]=gitlab.$${KIND_CLUSTER_NAME}.lan array[]=minio.$${KIND_CLUSTER_NAME}.lan array[]=registry.$${KIND_CLUSTER_NAME}.lan|jq '.array')
 	jq --null-input --arg name "gitlab-tls-certificate" --arg domain "$${HELM_NAMESPACE}.$${KIND_CLUSTER_NAME}.lan" --argjson domains "$${domains}" '{"apiVersion": "cert-manager.io/v1", "kind": "Certificate", "metadata":{"name": $$name}, "spec":{"secretName": $$name, "issuerRef": {"name": "selfsigned-issuer"}, commonName: $$domain, "dnsNames": $$domains } }' | yq e -P | kubectl apply --context $$KUBE_CONTEXT --namespace "$$HELM_NAMESPACE" -f -
-# kubectl get --context $$KUBE_CONTEXT --namespace "$$HELM_NAMESPACE" secrets/gitlab-tls-certificate -o jsonpath="{.data.tls\.crt}" | base64 -d > "$${HELM_NAMESPACE}.$${KIND_CLUSTER_NAME}.lan.crt"
-# kubectl create --context $$KUBE_CONTEXT --namespace "$$HELM_NAMESPACE" secret generic gitlab-runner-certs --from-file=$${HELM_NAMESPACE}.$${KIND_CLUSTER_NAME}.lan.crt=$${HELM_NAMESPACE}.$${KIND_CLUSTER_NAME}.lan.crt
 	deploy_helm_chart --add-repo --pull-push-images --debug
 	$(MAKE) gitlab-create-root-personal_access_tokens
 #################################################################################################################################
