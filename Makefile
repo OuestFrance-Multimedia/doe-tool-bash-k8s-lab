@@ -145,6 +145,8 @@ gitlab-create-root-personal_access_tokens:
 	source tools
 	eval_env_files .env helm-dependencies/gitlab.env
 	pod=$$(kubectl get pods --context $${KUBE_CONTEXT} -l app=task-runner -n $${HELM_NAMESPACE} -ojson|jq -r '.items[0].metadata.name')
+	set +e; kubectl exec --context $${KUBE_CONTEXT} --namespace=$${HELM_NAMESPACE} -it $$(echo $$pod) -c task-runner -- gitlab-rails runner "group = Group.find_by_name('GitLab Instance'); project = Project.find_by_full_path(group.path + '/Monitoring'); user = User.find_by_username('root'); ProjectDestroyWorker.perform_async(project.id, user.id, {})"; set -e
+#	kubectl exec --context $${KUBE_CONTEXT} --namespace=$${HELM_NAMESPACE} -it $$(echo $$pod) -c task-runner -- gitlab-rails runner "project = Project.find(1); user = User.find_by_username('root'); ProjectDestroyWorker.perform_async(project.id, user.id, {})"
 	set +e; kubectl exec --context $${KUBE_CONTEXT} --namespace=$${HELM_NAMESPACE} -it $$(echo $$pod) -c task-runner -- gitlab-rails runner "token = User.find_by_username('root').personal_access_tokens.create(scopes: [:api], name: 'Automation token'); token.set_token('$$GITLAB_TOKEN'); token.save!"; set -e
 	kubectl exec --context $${KUBE_CONTEXT} --namespace=$${HELM_NAMESPACE} -it $$(echo $$pod) -c task-runner -- gitlab-rails runner "u = User.find_by_username('root'); pp u.attributes"
 #	kubectl exec --context $${KUBE_CONTEXT} --namespace=$${HELM_NAMESPACE} -it $$(echo $$pod) -c task-runner -- gitlab-rails runner "u = User.new(username: 'test_user', email: 'test@example.com', name: 'Test User', password: 'password', password_confirmation: 'password'); u.skip_confirmation!; u.save!"
