@@ -467,6 +467,8 @@ installCRDs: true
 
 Installs the kube-prometheus stack, a collection of Kubernetes manifests, Grafana dashboards, and Prometheus rules combined with documentation and scripts to provide easy to operate end-to-end Kubernetes cluster monitoring with Prometheus using the Prometheus Operator.
 
+<p align="center"><a href="https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack)"><img alt="kube-prometheus-stack" src="https://sysdig.com/wp-content/uploads/2018/09/prometheus_operator_diagram.png" width="700px" /></a></p>
+
 kube-prometheus-stack is deploy with Helm Chart: https://hub.kubeapps.com/charts/prometheus-community/kube-prometheus-stack/18.0.3
 
 Example of an YAML config file:
