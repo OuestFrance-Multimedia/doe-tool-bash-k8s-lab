@@ -6,9 +6,9 @@ global:
   ingress:
     # https://docs.gitlab.com/charts/charts/globals#configure-ingress-settings
     # https://docs.gitlab.com/charts/charts/globals#globalingressconfigurecertmanager
-    # tls:
-    #   enabled: true
-    #   secretName: gitlab-tls-certificate
+    tls:
+      enabled: true
+      secretName: gitlab-tls-certificate
     configureCertmanager: false
 nginx-ingress:
   controller:
@@ -56,9 +56,6 @@ postgresql:
     size: 1Gi
 gitlab:
   webservice:
-    ingress:
-      tls:
-        secretName: gitlab-tls-certificate
     hpa:
       minReplicas: 1
       maxReplicas: 1
@@ -72,15 +69,9 @@ gitlab:
     minReplicas: 1
     maxReplicas: 1
 minio:
-  ingress:
-    tls:
-      secretName: gitlab-tls-certificate
   persistence:
     size: 1Gi
 registry:
-  ingress:
-    tls:
-      secretName: gitlab-tls-certificate
   hpa:
     minReplicas: 1
     maxReplicas: 1

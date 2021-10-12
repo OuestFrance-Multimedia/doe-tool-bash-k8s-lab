@@ -554,7 +554,40 @@ gitlab is deploy with Helm Chart: https://hub.kubeapps.com/charts/gitlab/gitlab/
 Example of an YAML config file:
 ```yaml
 ---
-
+global:
+  shell:
+    port: 22
+  ingress:
+    tls:
+      enabled: true
+      secretName: gitlab-tls-certificate
+    configureCertmanager: false
+certmanager:
+  install: false
+prometheus:
+  install: false
+gitlab-runner:
+  certsSecretName: gitlab-tls-certificate
+  envVars:
+    - name: CI_SERVER_TLS_CA_FILE
+      value: /home/gitlab-runner/.gitlab-runner/certs/tls.crt
+  runners:
+    locked: false
+    config: |
+      [[runners]]
+        [runners.kubernetes]
+          image = "docker:20.10.8"
+          poll_timeout = 180
+          privileged = true
+        [runners.kubernetes.volumes]
+          [[runners.kubernetes.volumes.empty_dir]]
+            name = "docker-certs"
+            mount_path = "/certs/client"
+            medium = "Memory"
+          [[runners.kubernetes.volumes.pvc]]
+            name = "gitlab-dind-var-lib"
+            mount_path = "/var/lib/docker"
+    executor: kubernetes
 ```
 
 # DNS
