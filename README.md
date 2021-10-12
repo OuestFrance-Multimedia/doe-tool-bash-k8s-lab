@@ -54,6 +54,7 @@ make install
 | [dig](#dig)                       	| package 	| querying the Domain Name System           	| `make install-packages`      	|
 | [ping](#ping)                   	  | package 	| test the reachability of a host             | `make install-packages`     	|
 | [nc](#nc)                   	      | package 	| R/W to network connections using TCP or UDP	| `make install-packages`      	|
+| [certutil](#certutil)               | package 	| Linux Cert Management tools	                | `make install-packages`      	|
 
 
 ## [Docker Engine](https://docs.docker.com/get-started/overview/)
@@ -165,7 +166,7 @@ curl -s https://www.gstatic.com/ipranges/cloud.json | jq '[[.prefixes[] | del(.s
 
 ## dig
 
- dig is a network administration command-line tool for querying the Domain Name System (DNS).
+dig is a network administration command-line tool for querying the Domain Name System (DNS).
 
 dig is useful for network troubleshooting and for educational purposes. It can operate based on command line option and flag arguments, or in batch mode by reading requests from an operating system file. When a specific name server is not specified in the command invocation, it uses the operating system's default resolver, usually configured in the file resolv.conf. Without any arguments it queries the DNS root zone. 
 
@@ -203,6 +204,28 @@ Example
 ```bash
 nc -vz 172.17.255.1 80                                                                      
 Connection to 172.17.255.1 80 port [tcp/domain] succeeded!
+```
+
+## certutil
+
+On Linux, browsers uses the NSS Shared DB, you can configure certificates with the NSS command line tools.
+
+### List all certificates
+```bash
+certutil -d sql:$HOME/.pki/nssdb -L
+```
+### List details of a certificate
+```bash
+certutil -d sql:$HOME/.pki/nssdb -L -n <certificate nickname>
+```
+### Add a certificate
+```bash
+certutil -d sql:$HOME/.pki/nssdb -A -t <TRUSTARGS> -n <certificate nickname> -i <certificate filename>
+```
+The `TRUSTARGS` are three strings of zero or more alphabetic characters, separated by commas. They define how the certificate should be trusted for SSL, email, and object signing, and are explained in the [certutil docs](https://developer.mozilla.org/en-US/docs/Mozilla/Projects/NSS/tools/NSS_Tools_certutil) or [Meena's blog post](https://blogs.oracle.com/meena/about-trust-flags-of-certificates-in-nss-database-that-can-be-modified-by-certutil) on trust flags.
+### Delete a certificate
+```bash
+certutil -d sql:$HOME/.pki/nssdb -D -n <certificate nickname>
 ```
 
 # Prerequisite
