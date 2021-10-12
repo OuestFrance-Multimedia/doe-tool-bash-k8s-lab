@@ -165,7 +165,7 @@ import-kube-prometheus-stack-crt:
 	file=monitoring.$${KIND_CLUSTER_NAME}.lan.crt
 	key=ca.crt
 	kubectl get secrets/monitoring-tls-certificate --context $${KUBE_CONTEXT} --namespace=$${HELM_NAMESPACE} -o jsonpath="{.data.$${key//./\\.}}" | base64 -d >> $$tempfile
-	nb=$$(certutil -d sql:$$HOME/.pki/nssdb -L | sed -rn "/^$${file}\s+/p" | wc -l); until [[ $nb -eq 0 ]]; do sleep 1; certutil -d sql:$$HOME/.pki/nssdb -D -n "$${file}" && nb=$$(certutil -d sql:$$HOME/.pki/nssdb -L | sed -rn "/^$${file}\s+/p" | wc -l); done
+	nb=$$(certutil -d sql:$$HOME/.pki/nssdb -L | sed -rn "/^$${file}\s+/p" | wc -l); until [[ $$nb -eq 0 ]]; do sleep 1; certutil -d sql:$$HOME/.pki/nssdb -D -n "$${file}" && nb=$$(certutil -d sql:$$HOME/.pki/nssdb -L | sed -rn "/^$${file}\s+/p" | wc -l); done
 	certutil -d sql:$$HOME/.pki/nssdb -A -t "CT,c,c" -n "$${file}" -i $$tempfile
 	certutil -d sql:$$HOME/.pki/nssdb -L
 	sudo cp $$tempfile /usr/local/share/ca-certificates/$${file}
@@ -182,7 +182,7 @@ import-argocd-crt:
 	file=argocd.$${KIND_CLUSTER_NAME}.lan.crt
 	key=ca.crt
 	kubectl get secrets/argocd-tls-certificate --context $${KUBE_CONTEXT} --namespace=$${HELM_NAMESPACE} -o jsonpath="{.data.$${key//./\\.}}" | base64 -d >> $$tempfile
-	nb=$$(certutil -d sql:$$HOME/.pki/nssdb -L | sed -rn "/^$${file}\s+/p" | wc -l); until [[ $nb -eq 0 ]]; do sleep 1; certutil -d sql:$$HOME/.pki/nssdb -D -n "$${file}" && nb=$$(certutil -d sql:$$HOME/.pki/nssdb -L | sed -rn "/^$${file}\s+/p" | wc -l); done
+	nb=$$(certutil -d sql:$$HOME/.pki/nssdb -L | sed -rn "/^$${file}\s+/p" | wc -l); until [[ $$nb -eq 0 ]]; do sleep 1; certutil -d sql:$$HOME/.pki/nssdb -D -n "$${file}" && nb=$$(certutil -d sql:$$HOME/.pki/nssdb -L | sed -rn "/^$${file}\s+/p" | wc -l); done
 	certutil -d sql:$$HOME/.pki/nssdb -A -t "CT,c,c" -n "$${file}" -i $$tempfile
 	certutil -d sql:$$HOME/.pki/nssdb -L
 	sudo cp $$tempfile /usr/local/share/ca-certificates/$${file}
@@ -199,7 +199,7 @@ import-gitlab-crt:
 	key=ca.crt
 	file=gitlab.$${KIND_CLUSTER_NAME}.lan.crt
 	kubectl get secrets/gitlab-tls-certificate --context $${KUBE_CONTEXT} --namespace=$${HELM_NAMESPACE} -o jsonpath="{.data.$${key//./\\.}}" | base64 -d > $$tempfile
-	nb=$$(certutil -d sql:$$HOME/.pki/nssdb -L | sed -rn "/^$${file}\s+/p" | wc -l); until [[ $nb -eq 0 ]]; do sleep 1; certutil -d sql:$$HOME/.pki/nssdb -D -n "$${file}" && nb=$$(certutil -d sql:$$HOME/.pki/nssdb -L | sed -rn "/^$${file}\s+/p" | wc -l); done
+	nb=$$(certutil -d sql:$$HOME/.pki/nssdb -L | sed -rn "/^$${file}\s+/p" | wc -l); until [[ $$nb -eq 0 ]]; do sleep 1; certutil -d sql:$$HOME/.pki/nssdb -D -n "$${file}" && nb=$$(certutil -d sql:$$HOME/.pki/nssdb -L | sed -rn "/^$${file}\s+/p" | wc -l); done
 	certutil -d sql:$$HOME/.pki/nssdb -A -t "CT,c,c" -n "$${file}" -i $$tempfile
 	certutil -d sql:$$HOME/.pki/nssdb -L
 	sudo cp $$tempfile /usr/local/share/ca-certificates/$${file}
