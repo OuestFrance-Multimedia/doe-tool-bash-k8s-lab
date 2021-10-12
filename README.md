@@ -331,6 +331,17 @@ make destroy
 ```
 ![destroy lab demo GIF](.github/destroy.gif)
 
+## Additional functionalities
+
+| name                              	                  | type    	| information                                	| install                     	          |
+|-----------------------------------	                  |---------	|--------------------------------------------	|---------------------------------------- |
+| [Argo CD](#argo-cd) 	                                | chart   	| deploy Argo CD into cluster        	        | `make deploy-argocd` 	                  |
+| [Gitlab](#gitlab-cloud-native-helm-chart)             | chart   	| deploy Gitlab into cluster                	| `make deploy-gitlab`        	          |
+| import kube-prometheus stack certificates             | cli   	  | import kube-prometheus stack certificates 	| `make import-kube-prometheus-stack-crt`	|
+| import Argo CD certificates 	                        | cli       | import Argo CD certificates        	        | `make import-argocd-crt` 	              |
+| import Gitlab certificates                            | cli   	  | import Gitlab certificates                  | `make import-gitlab-crt` 	              |
+| show credentials                                      | cli   	  | show credentials                            | `make show-creds` 	                    |
+
 ## [Metrics Server](https://github.com/kubernetes-sigs/metrics-server)
 
 Metrics Server is a scalable, efficient source of container resource metrics for Kubernetes built-in autoscaling pipelines.
@@ -437,6 +448,8 @@ service:
 
 cert-manager is a native Kubernetes certificate management controller. It can help with issuing certificates from a variety of sources, such as Let’s Encrypt, HashiCorp Vault, Venafi, a simple signing key pair, or self signed.
 
+<p align="center"><a href="https://cert-manager.io/docs/"><img alt="Moby" src="https://cert-manager.io/images/high-level-overview.svg" width="700px" /></a></p>
+
 cert-manager is deploy with Helm Chart: https://hub.kubeapps.com/charts/bitnami/cert-manager/0.1.20
 
 Example of an YAML config file:
@@ -491,6 +504,42 @@ prometheus:
     - secretName: monitoring-tls-certificate
       hosts:
       - prometheus.changeme.lan
+```
+
+## [Argo CD](https://argo-cd.readthedocs.io/en/stable/)
+
+Argo CD is a declarative, GitOps continuous delivery tool for Kubernetes.
+
+<p align="center"><a href="https://argo-cd.readthedocs.io/en/stable/"><img alt="Argo CD" src="https://argo-cd.readthedocs.io/en/stable/assets/argocd-ui.gif" width="900px" /></a></p>
+
+Argo CD is deploy with Helm Chart: https://hub.kubeapps.com/charts/argocd/argo-cd/3.21.0
+
+Example of an YAML config file:
+```yaml
+---
+
+```
+
+## [GitLab cloud native Helm Chart](https://docs.gitlab.com/charts/)
+
+The gitlab chart is the best way to operate GitLab on Kubernetes. It contains all the required components to get started, and can scale to large deployments.
+
+Some of the key benefits of this chart and corresponding containers are:
+- Improved scalability and reliability.
+- No requirement for root privileges.
+- Utilization of object storage instead of NFS for storage.
+
+
+
+<p align="center"><a href="https://docs.gitlab.com/charts/"><img alt="GitLab" src="https://codebabel.com/wp-content/uploads/2018/07/GITLAB.gif" width="900px" /></a></p>
+
+
+gitlab is deploy with Helm Chart: https://hub.kubeapps.com/charts/gitlab/gitlab/5.3.2
+
+Example of an YAML config file:
+```yaml
+---
+
 ```
 
 # DNS
