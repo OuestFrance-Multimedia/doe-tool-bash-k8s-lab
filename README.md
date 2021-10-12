@@ -214,16 +214,22 @@ Create `.env` file with following vars:
 |------------------------------	|------------------------------------------	|--------------------------------------------	|--------------------------	|
 | KIND_CLUSTER_NAME            	| cluster name                             	|                                            	| changeme                 	|
 | KIND_CLUSTER_IMAGE           	| kubernetes version                       	| https://hub.docker.com/r/kindest/node/tags 	| kindest/node:v1.19.7     	|
+| KUBE_CONTEXT            	    | kubernetes context                        |                                            	| kind-${KIND_CLUSTER_NAME} |
 | NETWORK_PREFIX               	| network prefix                           	| CIDR: 172.17.0.0/16                        	| 172.17                   	|
-| METALLB_SPEAKER_SECRET_VALUE 	| random 256 character alphanumeric string 	| $(openssl rand -base64 256\|tr -d '\n')    	| bpP0AGV07oQt9jjNINJQFQ== 	|
+| METALLB_SPEAKER_SECRET_VALUE 	| random 256 character alphanumeric string 	| $(openssl rand -base64 256 | tr -d '\n')    | bpP0AGV07oQt9jjNINJQFQ== 	|
+| ARGOCD_SERVER_ADMIN_PASSWORD 	| random 14 character alphanumeric string 	| $(openssl rand -base64 14 | tr -d '\n')    	| zffspkjxqiMPoOtgaAQ=      |
+| GRAFANA_ADMIN_PASSWORD 	      | random 14 character alphanumeric string 	| $(openssl rand -base64 14 | tr -d '\n')    	| B1aMuF8gHiPXPmH0MX8=      |
 
 Example:
 ```bash
 cat << EOF > .env
 KIND_CLUSTER_NAME=changeme
 KIND_CLUSTER_IMAGE=kindest/node:v1.19.7
+KUBE_CONTEXT=kind-${KIND_CLUSTER_NAME}
 NETWORK_PREFIX=172.17
 METALLB_SPEAKER_SECRET_VALUE=$(openssl rand -base64 256|tr -d '\n')
+ARGOCD_SERVER_ADMIN_PASSWORD=$(openssl rand -base64 14 | tr -d '\n')
+GRAFANA_ADMIN_PASSWORD=$(openssl rand -base64 14 | tr -d '\n')
 EOF
 ```
 
