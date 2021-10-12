@@ -59,7 +59,7 @@ deploy-metallb:
 	cd $(ROOT_DIR)
 	source tools
 	eval_env_files .env helm-dependencies/metallb.env
-	deploy_helm_chart --add-repo --pull-push-images
+	deploy_helm_chart --add-repo --pull-push-images --debug
 #################################################################################################################################
 deploy-metrics-server: ## deploy-metrics-server
 deploy-metrics-server:
@@ -67,7 +67,7 @@ deploy-metrics-server:
 	cd $(ROOT_DIR)
 	source tools
 	eval_env_files .env helm-dependencies/metrics-server.env
-	deploy_helm_chart --add-repo --pull-push-images
+	deploy_helm_chart --add-repo --pull-push-images --debug
 	kubectl get --context $${KUBE_CONTEXT} --raw "/apis/metrics.k8s.io/v1beta1/nodes"|yq e -P
 	kubectl get --context $${KUBE_CONTEXT} --raw "/apis/metrics.k8s.io/v1beta1/pods"|yq e -P
 #################################################################################################################################
@@ -77,7 +77,7 @@ deploy-kube-prometheus-stack:
 	cd $(ROOT_DIR)
 	source tools
 	eval_env_files .env helm-dependencies/kube-prometheus-stack.env
-	deploy_helm_chart --add-repo --pull-push-images
+	deploy_helm_chart --add-repo --pull-push-images --debug
 	jq --null-input '{"apiVersion": "cert-manager.io/v1", "kind": "Issuer", "metadata":{"name": "selfsigned-issuer"}, "spec":{"selfSigned": {}} }' | yq e -P | kubectl apply --context $$KUBE_CONTEXT --namespace "$$HELM_NAMESPACE" -f -
 	domains=$$(jo array[]=alertmanager.$${KIND_CLUSTER_NAME}.lan array[]=grafana.$${KIND_CLUSTER_NAME}.lan array[]=prometheus.$${KIND_CLUSTER_NAME}.lan|jq '.array')
 	jq --null-input --arg name "monitoring-tls-certificate" --arg domain "$$HELM_NAMESPACE.$${KIND_CLUSTER_NAME}.lan" --argjson domains "$${domains}" '{"apiVersion": "cert-manager.io/v1", "kind": "Certificate", "metadata":{"name": $$name}, "spec":{"secretName": $$name, "issuerRef": {"name": "selfsigned-issuer"}, commonName: $$domain, "dnsNames": $$domains } }' | yq e -P | kubectl apply --context $$KUBE_CONTEXT --namespace "$$HELM_NAMESPACE" -f -
@@ -88,7 +88,7 @@ deploy-cert-manager:
 	cd $(ROOT_DIR)
 	source tools
 	eval_env_files .env helm-dependencies/cert-manager.env
-	deploy_helm_chart --add-repo --pull-push-images
+	deploy_helm_chart --add-repo --pull-push-images --debug
 #################################################################################################################################
 deploy-nginx-ingress-controller: ## deploy-nginx-ingress-controller
 deploy-nginx-ingress-controller:
@@ -96,7 +96,7 @@ deploy-nginx-ingress-controller:
 	cd $(ROOT_DIR)
 	source tools
 	eval_env_files .env helm-dependencies/nginx-ingress-controller.env
-	deploy_helm_chart --add-repo --pull-push-images
+	deploy_helm_chart --add-repo --pull-push-images --debug
 #################################################################################################################################
 deploy-argocd: ## deploy-argocd
 deploy-argocd:
@@ -104,7 +104,7 @@ deploy-argocd:
 	cd $(ROOT_DIR)
 	source tools
 	eval_env_files .env helm-dependencies/argocd.env
-	deploy_helm_chart --add-repo --pull-push-images
+	deploy_helm_chart --add-repo --pull-push-images --debug
 	jq --null-input '{"apiVersion": "cert-manager.io/v1", "kind": "Issuer", "metadata":{"name": "selfsigned-issuer"}, "spec":{"selfSigned": {}} }' | yq e -P | kubectl apply --context $$KUBE_CONTEXT --namespace "$$HELM_NAMESPACE" -f -
 	jq --null-input --arg name "$$HELM_NAMESPACE-tls-certificate" --arg domain "$$HELM_NAMESPACE.$${KIND_CLUSTER_NAME}.lan" '{"apiVersion": "cert-manager.io/v1", "kind": "Certificate", "metadata":{"name": $$name}, "spec":{"secretName": $$name, "issuerRef": {"name": "selfsigned-issuer"}, commonName: $$domain, "dnsNames": [$$domain]} }' | yq e -P | kubectl apply --context $$KUBE_CONTEXT --namespace "$$HELM_NAMESPACE" -f -
 #################################################################################################################################
@@ -120,7 +120,7 @@ deploy-gitlab:
 	jq --null-input '{"apiVersion": "cert-manager.io/v1", "kind": "Issuer", "metadata":{"name": "selfsigned-issuer"}, "spec":{"selfSigned": {}} }' | yq e -P | kubectl apply --context $$KUBE_CONTEXT --namespace "$$HELM_NAMESPACE" -f -
 	domains=$$(jo array[]=gitlab.$${KIND_CLUSTER_NAME}.lan array[]=minio.$${KIND_CLUSTER_NAME}.lan array[]=registry.$${KIND_CLUSTER_NAME}.lan|jq '.array')
 	jq --null-input --arg name "gitlab-tls-certificate" --arg domain "$$HELM_NAMESPACE.$${KIND_CLUSTER_NAME}.lan" --argjson domains "$${domains}" '{"apiVersion": "cert-manager.io/v1", "kind": "Certificate", "metadata":{"name": $$name}, "spec":{"secretName": $$name, "issuerRef": {"name": "selfsigned-issuer"}, commonName: $$domain, "dnsNames": $$domains } }' | yq e -P | kubectl apply --context $$KUBE_CONTEXT --namespace "$$HELM_NAMESPACE" -f -
-	deploy_helm_chart --add-repo --pull-push-images
+	deploy_helm_chart --add-repo --pull-push-images --debug
 	$(MAKE) gitlab-create-root-personal_access_tokens
 #################################################################################################################################
 gitlab-pull-push-dind-images: ## gitlab-pull-push-dind-images
