@@ -1,6 +1,6 @@
 # Make defaults
 .ONESHELL:
-.SILENT: pull-push-images create-docker-network create-kind destroy deploy-small-stack deploy-full-stack deploy-metallb deploy-metrics-server deploy-kube-prometheus-stack deploy-nginx-ingress-controller deploy-cert-manager deploy-argocd show-creds deploy-gitlab gitlab-pull-push-dind-images gitlab-create-root-personal_access_tokens
+.SILENT: pull-push-images create-docker-network create-kind destroy deploy-small-stack deploy-full-stack deploy-metallb deploy-metrics-server deploy-kube-prometheus-stack deploy-nginx-ingress-controller deploy-cert-manager deploy-argocd show-creds deploy-gitlab gitlab-pull-push-dind-images gitlab-create-root-personal_access_tokens import-kube-prometheus-stack-crt import-argocd-crt import-gitlab-crt 
 .DEFAULT_GOAL := help
 
 SHELL := /bin/bash
