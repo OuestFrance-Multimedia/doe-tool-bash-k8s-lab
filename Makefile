@@ -260,7 +260,7 @@ show-creds:
 BIN_DIR := ~/bin
 
 install: ## install
-install: install-docker install-kubectl prepare-env install-packages install-kind install-helm install-yq install-lens install-kubectx install-kubens install-dnsmasq
+install: install-docker install-kubectl prepare-env install-packages install-kind install-helm install-yq install-lens install-kubectx install-kubens
 
 install-kubectl: ## install-kubectl
 install-kubectl:
@@ -434,6 +434,41 @@ install-kubens:
 	rm -Rf $$tempdir; \
 	chmod +x $(BIN_DIR)/$${word}
 
+prepare-etc-hosts.d: ## prepare-etc-hosts.d
+prepare-etc-hosts.d:
+	if ! [[ -d /etc/hosts.d ]]; then \
+		sudo mkdir -p /etc/hosts.d; \
+	fi
+
+	if ! [[ -f /etc/hosts.d/hosts ]]; then \
+		sudo cp -a /etc/hosts /etc/hosts.d/hosts; \
+	fi
+
+	sudo chown -R root:root /etc/hosts.d
+	sudo chmod 755 /etc/hosts.d
+	sudo chmod 644 /etc/hosts.d/*
+
+config-etc-hosts: ## config-etc-hosts
+config-etc-hosts:
+	set -e
+	cd $(ROOT_DIR)
+	$(MAKE) prepare-etc-hosts.d
+	sudo cp hosts*.conf /etc/hosts.d &> /dev/null
+	sudo chmod 644 /etc/hosts.d/*
+	sudo bash -c "cat /etc/hosts.d/* > /etc/hosts"
+
+remove-dnsmasq-and-restore-resolved: ## remove-dnsmasq-and-restore-resolved
+remove-dnsmasq-and-restore-resolved:
+	dnsmasq_svc_enabled=$$(systemctl list-unit-files|sed -rn "/^dnsmasq\.service\s+enabled/p"); \
+	if [[ -n "$$dnsmasq_svc_enabled" ]]; then \
+		sudo systemctl disable --now dnsmasq.service; \
+		sudo systemctl stop dnsmasq.service; \
+		test -f /etc/resolv.conf && sudo chattr -i /etc/resolv.conf && sudo rm /etc/resolv.conf; \
+		sudo systemctl enable systemd-resolved; \
+		sudo systemctl restart systemd-resolved; \
+		sudo systemctl restart network-manager.service; \
+	fi
+
 install-dnsmasq: ## install-dnsmasq
 install-dnsmasq:
 	set -e
@@ -461,6 +496,8 @@ config-dnsmasq:
 	sudo cp dnsmasq*.conf /etc/dnsmasq.d &> /dev/null
 
 	sudo systemctl disable --now systemd-resolved
+	sudo systemctl enable dnsmasq
+	sudo systemctl restart network-manager.service
 	sudo systemctl restart dnsmasq
 
 ###################################################################################################################################################################################

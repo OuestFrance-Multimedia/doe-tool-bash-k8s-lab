@@ -39,22 +39,22 @@ Use the following command in order to install all-in-one tools
 make install
 ```
 
-| name                              	| type    	| information                                	| install                     	|
-|-----------------------------------	|---------	|--------------------------------------------	|-----------------------------	|
-| [Docker Engine](#docker-engine)   	| package 	| open source containerization technology    	| `make install-docker`        	|
-| [kind](#kind)                     	| binary  	| Kubernetes IN Docker                       	| `make install-kind`          	|
-| [helm](#helm)                     	| binary  	| The package manager for Kubernetes         	| `make install-helm`          	|
-| [lens](#lens)                     	| snap    	| The Kubernetes IDE                         	| `make install-lens`          	|
-| [kubectl](#kubectl)               	| package 	| The Kubernetes command-line tools          	| `make install-kubectl`      	|
-| [kubectx](#kubectx)               	| binary  	| manage and switch between kubectl contexts 	| `make install-kubectx`       	|
-| [kubens](#kubens)                 	| binary  	| switch between Kubernetes namespaces       	| `make install-kubens`        	|
-| [jq](#jq])                         	| package 	| a command-line JSON processor             	| `make install-packages`      	|
-| [yq](#yq)                          	| snap    	| a command-line YAML processor              	| `make install-yq`            	|
-| [dnsmasq](#dns)                   	| package 	| Domain Name System                         	| `make install-dnsmasq`       	|
-| [dig](#dig)                       	| package 	| querying the Domain Name System           	| `make install-packages`      	|
-| [ping](#ping)                   	  | package 	| test the reachability of a host             | `make install-packages`     	|
-| [nc](#nc)                   	      | package 	| R/W to network connections using TCP or UDP	| `make install-packages`      	|
-| [certutil](#certutil)               | package 	| Linux Cert Management tools	                | `make install-packages`      	|
+| name                              	| type    	  | information                                	| install                     	|
+|-----------------------------------	|-----------	|--------------------------------------------	|-----------------------------	|
+| [Docker Engine](#docker-engine)   	| package 	  | open source containerization technology    	| `make install-docker`        	|
+| [kind](#kind)                     	| binary  	  | Kubernetes IN Docker                       	| `make install-kind`          	|
+| [helm](#helm)                     	| binary  	  | The package manager for Kubernetes         	| `make install-helm`          	|
+| [lens](#lens)                     	| snap    	  | The Kubernetes IDE                         	| `make install-lens`          	|
+| [kubectl](#kubectl)               	| package 	  | The Kubernetes command-line tools          	| `make install-kubectl`      	|
+| [kubectx](#kubectx)               	| binary  	  | manage and switch between kubectl contexts 	| `make install-kubectx`       	|
+| [kubens](#kubens)                 	| binary  	  | switch between Kubernetes namespaces       	| `make install-kubens`        	|
+| [jq](#jq])                         	| package 	  | a command-line JSON processor             	| `make install-packages`      	|
+| [yq](#yq)                          	| snap    	  | a command-line YAML processor              	| `make install-yq`            	|
+| ~~[dnsmasq](#dns)~~                	| ~~package~~	| ~~Domain Name System~~                      | ~~`make install-dnsmasq`~~    |
+| [dig](#dig)                       	| package 	  | querying the Domain Name System           	| `make install-packages`      	|
+| [ping](#ping)                   	  | package 	  | test the reachability of a host             | `make install-packages`     	|
+| [nc](#nc)                   	      | package 	  | R/W to network connections using TCP or UDP	| `make install-packages`      	|
+| [certutil](#certutil)               | package 	  | Linux Cert Management tools	                | `make install-packages`      	|
 
 
 ## [Docker Engine](https://docs.docker.com/get-started/overview/)
@@ -333,14 +333,19 @@ make destroy
 
 ## Additional functionalities
 
-| name                              	                  | type    	| information                                	| install                     	          |
-|-----------------------------------	                  |---------	|--------------------------------------------	|---------------------------------------- |
-| [Argo CD](#argo-cd) 	                                | chart   	| deploy Argo CD into cluster        	        | `make deploy-argocd` 	                  |
-| [Gitlab](#gitlab-cloud-native-helm-chart)             | chart   	| deploy Gitlab into cluster                	| `make deploy-gitlab`        	          |
-| import kube-prometheus stack certificates             | cli   	  | import kube-prometheus stack certificates 	| `make import-kube-prometheus-stack-crt`	|
-| import Argo CD certificates 	                        | cli       | import Argo CD certificates        	        | `make import-argocd-crt` 	              |
-| import Gitlab certificates                            | cli   	  | import Gitlab certificates                  | `make import-gitlab-crt` 	              |
-| show credentials                                      | cli   	  | show credentials                            | `make show-creds` 	                    |
+| name                              	                  | type    	| information                                	| install                     	             |
+|-----------------------------------	                  |---------	|--------------------------------------------	|------------------------------------------- |
+| [Argo CD](#argo-cd) 	                                | chart   	| deploy Argo CD into cluster        	        | `make deploy-argocd` 	                     |
+| [Gitlab](#gitlab-cloud-native-helm-chart)             | chart   	| deploy Gitlab into cluster                	| `make deploy-gitlab`        	             |
+| import kube-prometheus stack certificates             | cli   	  | import kube-prometheus stack certificates 	| `make import-kube-prometheus-stack-crt`	   |
+| import Argo CD certificates 	                        | cli       | import Argo CD certificates        	        | `make import-argocd-crt` 	                 |
+| import Gitlab certificates                            | cli   	  | import Gitlab certificates                  | `make import-gitlab-crt` 	                 |
+| show credentials                                      | cli   	  | show credentials                            | `make show-creds` 	                       |
+| ~~[configure dnsmasq](#dnsmasq)~~                     | ~~cli~~   | ~~configure dnsmasq~~                       | ~~`make config-dnsmasq`~~                  |
+| remove dnsmasq and restore resolved                   | cli   	  | remove dnsmasq and restore resolved         | `make remove-dnsmasq-and-restore-resolved` |
+| [configure /etc/hosts](#systemd-resolved)                                  | cli   	  | configure /etc/hosts, replace dnsmasq       | `make config-etc-hosts`                    |
+
+<p align="center"><img alt="make show-creds" src=".github/k8s-lab-apps.gif" width="900px" /></p>
 
 ## [Metrics Server](https://github.com/kubernetes-sigs/metrics-server)
 
@@ -467,7 +472,7 @@ installCRDs: true
 
 Installs the kube-prometheus stack, a collection of Kubernetes manifests, Grafana dashboards, and Prometheus rules combined with documentation and scripts to provide easy to operate end-to-end Kubernetes cluster monitoring with Prometheus using the Prometheus Operator.
 
-<p align="center"><a href="https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack)"><img alt="kube-prometheus-stack" src="https://sysdig.com/wp-content/uploads/2018/09/prometheus_operator_diagram.png" width="700px" /></a></p>
+<p align="center"><a href="https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack"><img alt="kube-prometheus-stack" src="https://sysdig.com/wp-content/uploads/2018/09/prometheus_operator_diagram.png" width="700px" /></a></p>
 
 kube-prometheus-stack is deploy with Helm Chart: https://hub.kubeapps.com/charts/prometheus-community/kube-prometheus-stack/18.0.3
 
@@ -596,7 +601,64 @@ gitlab-runner:
 
 # DNS
 
-## create your DNS config
+## systemd-resolved
+
+### create your hosts config file
+
+By default, a explicit start-end range of IPs is reserved for MetalLB : `${NETWORK_PREFIX}.255.1-${NETWORK_PREFIX}.255.254`
+
+`Choose an IP Address in MetalLB IP address ranges and affect it to a fqdn`
+
+Example
+```bash
+cat << EOF > dnsmasq-example.conf
+# kube-prometheus-stack-with-grafana-install
+172.17.255.200	alertmanager.changeme.lan
+172.17.255.200	grafana.changeme.lan
+172.17.255.200	prometheus.changeme.lan
+
+# argocd
+172.17.255.200	argocd.changeme.lan
+
+# gitlab
+172.17.255.201	minio.changeme.lan
+172.17.255.201	registry.changeme.lan
+172.17.255.201	gitlab.changeme.lan
+
+# app1
+172.17.255.100  app1.changeme.lan
+
+EOF
+```
+`each file with following pattern: hosts*.conf will be copied into /etc/hosts.d config folder`
+
+### apply hosts config
+
+```bash
+make config-etc-hosts
+```
+
+### What's happened ?
+
+1. ceate directory /etc/hosts.d
+2. copy /etc/hosts into /etc/hosts.d/hosts if not exists
+3. change user/group on directory /etc/hosts.d
+4. change mode on directory /etc/hosts.d
+5. change mode on files /etc/hosts.d/*
+6. copy hosts*.conf files into /etc/hosts.d config folder
+7. concat files: /etc/hosts.d/* into file: /etc/hosts
+
+## [Dnsmasq](https://thekelleys.org.uk/dnsmasq/doc.html)
+
+<span style="color:red"> *please use [systemd-resolved](#systemd-resolved) instead*</span>
+
+Dnsmasq provides network infrastructure for small networks: DNS, DHCP, router advertisement and network boot.
+
+<p align="center"><a href="https://thekelleys.org.uk/dnsmasq/doc.html"><img alt="Dnsmasq" src="https://upload.wikimedia.org/wikipedia/commons/thumb/2/2c/Dnsmasq_icon.svg/langfr-440px-Dnsmasq_icon.svg.png" width="440px" /></a></p>
+
+It is designed to be lightweight and have a small footprint, suitable for resource constrained routers and firewalls. It has also been widely used for tethering on smartphones and portable hotspots, and to support virtual networking in virtualisation frameworks. Supported platforms include Linux (with glibc and uclibc), Android, *BSD, and Mac OS X. Dnsmasq is included in most Linux distributions and the ports systems of FreeBSD, OpenBSD and NetBSD. Dnsmasq provides full IPv6 support.
+
+### create your DNS config
 
 By default, a explicit start-end range of IPs is reserved for MetalLB : `${NETWORK_PREFIX}.255.1-${NETWORK_PREFIX}.255.254`
 
@@ -610,13 +672,13 @@ EOF
 ```
 `each file with following pattern: dnsmasq*.conf will be copied into dnsmasq config folder`
 
-## apply DNS config
+### apply DNS config
 
 ```bash
 make config-dnsmasq
 ```
 
-## What's happened ?
+### What's happened ?
 
 1. remove immutable attribute on /etc/resolv.conf
 2. delete /etc/resolv.conf
@@ -631,3 +693,4 @@ make config-dnsmasq
 
 `YOU NEED TO APPLY DNS CONFIG EACH TIME YOU CHANGE NETWORK CONTEXT, EXAMPLE: VPN CONNECTION ETC`
 
+## append host into /etc/hosts file
