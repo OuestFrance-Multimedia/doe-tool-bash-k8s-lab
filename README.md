@@ -31,6 +31,8 @@ A Kubernetes story
 </a>
 </p>
 
+Get changelog here: [view full details](./CHANGELOG.md)
+
 
 # Toolbox
 
@@ -601,7 +603,11 @@ gitlab-runner:
 
 # DNS
 
-## systemd-resolved
+## [systemd-resolved](https://wiki.archlinux.org/title/Domain_name_resolution)
+
+systemd-resolved is a [systemd](https://wiki.archlinux.org/title/Systemd) service that provides network name resolution to local applications via a [D-Bus](https://wiki.archlinux.org/title/D-Bus) interface, the `resolve` [NSS](https://wiki.archlinux.org/title/Domain_name_resolution#Name_Service_Switch) service ([nss-resolve(8)](https://man.archlinux.org/man/nss-resolve.8)), and a local DNS stub listener on `127.0.0.53`. See [systemd-resolved(8)](https://man.archlinux.org/man/systemd-resolved.8) for the usage. 
+
+<p align="center"><a href="https://www.gabriel.urdhr.fr/2020/04/20/linux-host-name-resolution/"><img alt="Dnsmasq" src="https://www.gabriel.urdhr.fr/img/name-resolution.svg" width="900px" /></a></p>
 
 ### create your hosts config file
 
@@ -612,7 +618,7 @@ By default, a explicit start-end range of IPs is reserved for MetalLB : `${NETWO
 Example
 ```bash
 cat << EOF > dnsmasq-example.conf
-# kube-prometheus-stack-with-grafana-install
+# kube-prometheus-stack
 172.17.255.200	alertmanager.changeme.lan
 172.17.255.200	grafana.changeme.lan
 172.17.255.200	prometheus.changeme.lan
@@ -630,7 +636,7 @@ cat << EOF > dnsmasq-example.conf
 
 EOF
 ```
-`each file with following pattern: hosts*.conf will be copied into /etc/hosts.d config folder`
+each file with following pattern: **hosts\*.conf** will be copied into /etc/hosts.d config folder
 
 ### apply hosts config
 
@@ -692,5 +698,3 @@ make config-dnsmasq
 10. restart service dnsmasq
 
 `YOU NEED TO APPLY DNS CONFIG EACH TIME YOU CHANGE NETWORK CONTEXT, EXAMPLE: VPN CONNECTION ETC`
-
-## append host into /etc/hosts file
