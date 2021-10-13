@@ -452,10 +452,42 @@ config-etc-hosts: ## config-etc-hosts
 config-etc-hosts:
 	set -e
 	cd $(ROOT_DIR)
-	$(MAKE) prepare-etc-hosts.d
-	sudo cp hosts*.conf /etc/hosts.d &> /dev/null
-	sudo chmod 644 /etc/hosts.d/*
-	sudo bash -c "cat /etc/hosts.d/* > /etc/hosts"
+	if ! [[ -d /etc/hosts.d ]]; then \
+		$(MAKE) prepare-etc-hosts.d; \
+	fi
+	for f in hosts*.conf; do \
+		echo "file: $$f"; \
+		file=$$(basename $$f)
+		if ! [[ -f /etc/hosts.d/$$file ]]; then \
+			echo "file need to be created: /etc/hosts.d/$$file"; \
+			sudo cp $$f /etc/hosts.d/$$file; \
+			sudo chmod 644 /etc/hosts.d/*; \
+		else \
+			echo "file already exists: /etc/hosts.d/$$file"; \
+			sumf=$$(cat $$f | sha256sum | cut -d" " -f1)
+			sumfile=$$(cat /etc/hosts.d/$$file | sha256sum | cut -d" " -f1)
+			echo "checksum $$f: $$sumf"
+			echo "checksum /etc/hosts.d/$$file: $$sumfile"
+			if [[ "$$sumf" != "$$sumfile" ]]; then \
+				echo "checksums are different"; \
+				sudo cp $$f /etc/hosts.d/$$file; \
+				sudo chmod 644 /etc/hosts.d/*; \
+			else \
+				echo "checksums are the same"; \
+			fi
+		fi
+	done
+
+	sumold=$$(cat /etc/hosts | sha256sum | cut -d" " -f1)
+	sumnew=$$(cat /etc/hosts.d/* | sha256sum | cut -d" " -f1 )
+	echo "checksum /etc/hosts: $$sumold"
+	echo "checksum /etc/hosts.d/*: $$sumnew"
+	if [[ "$$sumold" != "$$sumnew" ]]; then \
+		echo "checksums are different"; \
+		sudo bash -c "cat /etc/hosts.d/* > /etc/hosts"
+	else \
+		echo "checksums are the same"; \
+	fi
 
 remove-dnsmasq-and-restore-resolved: ## remove-dnsmasq-and-restore-resolved
 remove-dnsmasq-and-restore-resolved:
