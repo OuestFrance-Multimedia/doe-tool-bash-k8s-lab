@@ -462,12 +462,16 @@ cert-manager is a native Kubernetes certificate management controller. It can he
 
 <p align="center"><a href="https://cert-manager.io/docs/"><img alt="Cert Manager" src="https://cert-manager.io/images/high-level-overview.svg" width="700px" /></a></p>
 
-cert-manager is deploy with Helm Chart: https://hub.kubeapps.com/charts/bitnami/cert-manager/0.1.20
+cert-manager is deploy with Helm Chart: https://hub.kubeapps.com/charts/cert-manager/cert-manager/1.6.1
 
 Example of an YAML config file:
 ```yaml
 ---
 installCRDs: true
+ingressShim:
+  defaultIssuerName: selfsigned-cluster-issuer
+  defaultIssuerKind: ClusterIssuer
+  defaultIssuerGroup: cert-manager.io
 ```
 
 ## [kube-prometheus-stack](https://github.com/prometheus-community/helm-charts/tree/main/charts/kube-prometheus-stack)
