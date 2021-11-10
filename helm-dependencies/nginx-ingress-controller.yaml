@@ -3,5 +3,6 @@
 ---
 #fullnameOverride: nginx-ingress
 #ingressClass: prometheus-nginx
+ingressClass: nginx-01
 publishService:
   enabled: true
