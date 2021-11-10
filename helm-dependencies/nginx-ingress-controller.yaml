@@ -1,8 +1,6 @@
 # https://artifacthub.io/packages/helm/bitnami/nginx-ingress-controller
 # https://github.com/bitnami/charts/blob/master/bitnami/nginx-ingress-controller/values.yaml
 ---
-#fullnameOverride: nginx-ingress
-#ingressClass: prometheus-nginx
-ingressClass: nginx-01
-publishService:
-  enabled: true
+controller:
+  ingressClassResource:
+    name: nginx-01
