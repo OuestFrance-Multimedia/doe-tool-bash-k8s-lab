@@ -89,6 +89,7 @@ deploy-cert-manager:
 	source tools
 	eval_env_files .env helm-dependencies/cert-manager.env
 	deploy_helm_chart --add-repo --pull-push-images --debug
+	jq --null-input '{"apiVersion":"cert-manager.io/v1","kind":"ClusterIssuer","metadata":{"name":"selfsigned-cluster-issuer"},"spec":{"selfSigned":{}}}' | yq e -P | kubectl apply --context $$KUBE_CONTEXT -f -
 #################################################################################################################################
 deploy-nginx-ingress-controller: ## deploy-nginx-ingress-controller
 deploy-nginx-ingress-controller:

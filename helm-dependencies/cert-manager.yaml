@@ -4,3 +4,7 @@
 # https://tech.paulcz.net/blog/creating-self-signed-certs-on-kubernetes/
 ---
 installCRDs: true
+ingressShim:
+  defaultIssuerName: selfsigned-cluster-issuer
+  defaultIssuerKind: ClusterIssuer
+  defaultIssuerGroup: cert-manager.io
