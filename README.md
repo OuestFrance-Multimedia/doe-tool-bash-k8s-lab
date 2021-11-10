@@ -442,18 +442,16 @@ Ingress-nginx is an Ingress controller for Kubernetes using NGINX as a reverse p
 
 <p align="center"><a href="https://kubernetes.github.io/ingress-nginx/"><img alt="NGINX Ingress Controller" src="https://www.nginx.com/wp-content/uploads/2018/12/NGINX-Ingress-Controller-4-services_social.png" width="900px" /></a></p>
 
-Ingress-nginx is deploy with Helm Chart: https://hub.kubeapps.com/charts/bitnami/nginx-ingress-controller/7.6.21
+Ingress-nginx is deploy with Helm Chart: https://hub.kubeapps.com/charts/ingress-nginx/ingress-nginx/4.0.6
 
 Example of an YAML config file:
 ```yaml
 ---
-apiService:
-  create: true
-extraArgs:
-  kubelet-insecure-tls: true
-  kubelet-preferred-address-types: InternalIP
-service:
-  loadBalancerIP: 172.17.255.200
+controller:
+  ingressClassResource:
+    name: nginx-01
+  service:
+    loadBalancerIP: 172.17.255.200
 ```
 
 ## [Cert Manager](https://cert-manager.io/docs/)

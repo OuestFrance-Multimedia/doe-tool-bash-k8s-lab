@@ -96,7 +96,7 @@ deploy-nginx-ingress-controller:
 	set -e
 	cd $(ROOT_DIR)
 	source tools
-	eval_env_files .env helm-dependencies/nginx-ingress-controller.env
+	eval_env_files .env helm-dependencies/ingress-nginx.env
 	deploy_helm_chart --add-repo --pull-push-images --debug
 #################################################################################################################################
 deploy-argocd: ## deploy-argocd
