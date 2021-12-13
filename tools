@@ -1233,5 +1233,34 @@ function deploy_helm_chart () {
 	helm_upgrade					${debug:+--debug}
 }
 
+function import_certificates () {
+  set -e
+
+  if [ -z "$KUBE_CONTEXT" ]; then
+    echo "environment var named KUBE_CONTEXT is required" && exit 1
+  fi
+
+  namespaces=$(kubectl get ns --context $KUBE_CONTEXT -o jsonpath='{.items[*].metadata.name}')
+  # echo "namespaces: $namespaces"
+  for n in $namespaces; do
+    # echo "namespace: $n"
+    secrets=$(kubectl get certificates.cert-manager.io --context $KUBE_CONTEXT -o jsonpath='{.items[*].spec.secretName}' --namespace=$n)
+    # echo "secrets: $secrets"
+    for s in $secrets; do
+      echo "secret: $s"
+      tempfile=$(mktemp /tmp/crt.XXXXXXXXXX)
+      trap "rm -Rf $tempfile" 0 2 3 15
+      file=$s.crt
+      key=ca.crt
+      kubectl get secrets/$s --context $KUBE_CONTEXT -o jsonpath="{.data.${key//./\\.}}" -n $n | base64 -d >> $tempfile
+      nb=$(certutil -d sql:$HOME/.pki/nssdb -L | sed -rn "/^${file}\s+/p" | wc -l); until [[ $nb -eq 0 ]]; do sleep 1; certutil -d sql:$HOME/.pki/nssdb -D -n "${file}" && nb=$(certutil -d sql:$HOME/.pki/nssdb -L | sed -rn "/^${file}\s+/p" | wc -l); done
+      certutil -d sql:$HOME/.pki/nssdb -A -t "CT,c,c" -n "${file}" -i $tempfile
+      certutil -d sql:$HOME/.pki/nssdb -L
+      sudo cp $tempfile /usr/local/share/ca-certificates/${file}
+    done
+  done
+  sudo update-ca-certificates
+}
+
 # Allows to call a function based on arguments passed to the script
 $*
