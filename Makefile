@@ -33,6 +33,31 @@ start:
 	source tools
 	start_cluster --env-file=.env
 #################################################################################################################################
+install-variant-aroma: ## docker-network + kind + metallb + nginx-ingress-ctrl + cert-manager + metrics-server + kube-prometheus-stack + argocd + gitlab
+install-variant-aroma: install-variant-full deploy-kube-prometheus-stack deploy-argocd deploy-gitlab import-kube-prometheus-stack-crt import-argocd-crt import-gitlab-crt
+#################################################################################################################################
+install-variant-super: ## docker-network + kind + metallb + nginx-ingress-ctrl + cert-manager + metrics-server + kube-prometheus-stack + argocd
+install-variant-super: install-variant-full deploy-kube-prometheus-stack deploy-argocd import-kube-prometheus-stack-crt import-argocd-crt
+#################################################################################################################################
+install-variant-stock: ## docker-network + kind + metallb + nginx-ingress-ctrl + cert-manager + metrics-server + kube-prometheus-stack
+install-variant-stock: install-variant-full deploy-kube-prometheus-stack import-kube-prometheus-stack-crt
+#################################################################################################################################
+install-variant-full: ## docker-network + kind + metallb + nginx-ingress-ctrl + cert-manager + metrics-server
+install-variant-full: install-variant-mini deploy-metrics-server
+#################################################################################################################################
+install-variant-mini: ## docker-network + kind + metallb + nginx-ingress-ctrl + cert-manager
+install-variant-mini: install-variant-micro deploy-cert-manager
+#################################################################################################################################
+install-variant-micro: ## docker-network + kind + metallb + nginx-ingress-ctrl
+install-variant-micro: install-variant-nano deploy-nginx-ingress-controller
+#################################################################################################################################
+install-variant-nano: ## docker-network + kind + metallb
+install-variant-nano: install-variant-pico deploy-metallb
+#################################################################################################################################
+install-variant-pico: ## docker-network + kind
+install-variant-pico: create-docker-network create-kind
+
+#################################################################################################################################
 deploy-small-stack: # deploy-small-stack
 deploy-small-stack: create
 #################################################################################################################################
@@ -537,4 +562,5 @@ config-dnsmasq:
 ###################################################################################################################################################################################
 
 help:
-	@grep -E '(^[a-zA-Z_-]+:.*?##.*$$)' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[32m%-30s\033[0m %s\n", $$1, $$2}'
+	@grep -E '(^(\w+-?)+:.*?##.*$$)' Makefile | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[32m%-30s\033[0m %s\n", $$1, $$2}'
+
