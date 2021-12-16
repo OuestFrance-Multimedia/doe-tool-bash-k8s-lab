@@ -950,6 +950,26 @@ function helm_template () {
     ${HELM_SET_18:+--set $HELM_SET_18} \
     ${HELM_SET_19:+--set $HELM_SET_19} \
     ${HELM_SET_20:+--set $HELM_SET_20} \
+    ${HELM_SET_STRING_01:+--set-string $HELM_SET_STRING_01} \
+    ${HELM_SET_STRING_02:+--set-string $HELM_SET_STRING_02} \
+    ${HELM_SET_STRING_03:+--set-string $HELM_SET_STRING_03} \
+    ${HELM_SET_STRING_04:+--set-string $HELM_SET_STRING_04} \
+    ${HELM_SET_STRING_05:+--set-string $HELM_SET_STRING_05} \
+    ${HELM_SET_STRING_06:+--set-string $HELM_SET_STRING_06} \
+    ${HELM_SET_STRING_07:+--set-string $HELM_SET_STRING_07} \
+    ${HELM_SET_STRING_08:+--set-string $HELM_SET_STRING_08} \
+    ${HELM_SET_STRING_09:+--set-string $HELM_SET_STRING_09} \
+    ${HELM_SET_STRING_10:+--set-string $HELM_SET_STRING_10} \
+    ${HELM_SET_STRING_11:+--set-string $HELM_SET_STRING_11} \
+    ${HELM_SET_STRING_12:+--set-string $HELM_SET_STRING_12} \
+    ${HELM_SET_STRING_13:+--set-string $HELM_SET_STRING_13} \
+    ${HELM_SET_STRING_14:+--set-string $HELM_SET_STRING_14} \
+    ${HELM_SET_STRING_15:+--set-string $HELM_SET_STRING_15} \
+    ${HELM_SET_STRING_16:+--set-string $HELM_SET_STRING_16} \
+    ${HELM_SET_STRING_17:+--set-string $HELM_SET_STRING_17} \
+    ${HELM_SET_STRING_18:+--set-string $HELM_SET_STRING_18} \
+    ${HELM_SET_STRING_19:+--set-string $HELM_SET_STRING_19} \
+    ${HELM_SET_STRING_20:+--set-string $HELM_SET_STRING_20} \
 		--name-template=${HELM_RELEASE} \
     ${HELM_CHART}
 EOF
@@ -1068,6 +1088,26 @@ function helm_upgrade () {
     ${HELM_SET_18:+--set $HELM_SET_18} \
     ${HELM_SET_19:+--set $HELM_SET_19} \
     ${HELM_SET_20:+--set $HELM_SET_20} \
+    ${HELM_SET_STRING_01:+--set-string $HELM_SET_STRING_01} \
+    ${HELM_SET_STRING_02:+--set-string $HELM_SET_STRING_02} \
+    ${HELM_SET_STRING_03:+--set-string $HELM_SET_STRING_03} \
+    ${HELM_SET_STRING_04:+--set-string $HELM_SET_STRING_04} \
+    ${HELM_SET_STRING_05:+--set-string $HELM_SET_STRING_05} \
+    ${HELM_SET_STRING_06:+--set-string $HELM_SET_STRING_06} \
+    ${HELM_SET_STRING_07:+--set-string $HELM_SET_STRING_07} \
+    ${HELM_SET_STRING_08:+--set-string $HELM_SET_STRING_08} \
+    ${HELM_SET_STRING_09:+--set-string $HELM_SET_STRING_09} \
+    ${HELM_SET_STRING_10:+--set-string $HELM_SET_STRING_10} \
+    ${HELM_SET_STRING_11:+--set-string $HELM_SET_STRING_11} \
+    ${HELM_SET_STRING_12:+--set-string $HELM_SET_STRING_12} \
+    ${HELM_SET_STRING_13:+--set-string $HELM_SET_STRING_13} \
+    ${HELM_SET_STRING_14:+--set-string $HELM_SET_STRING_14} \
+    ${HELM_SET_STRING_15:+--set-string $HELM_SET_STRING_15} \
+    ${HELM_SET_STRING_16:+--set-string $HELM_SET_STRING_16} \
+    ${HELM_SET_STRING_17:+--set-string $HELM_SET_STRING_17} \
+    ${HELM_SET_STRING_18:+--set-string $HELM_SET_STRING_18} \
+    ${HELM_SET_STRING_19:+--set-string $HELM_SET_STRING_19} \
+    ${HELM_SET_STRING_20:+--set-string $HELM_SET_STRING_20} \
 		${HELM_RELEASE} \
 		${HELM_CHART}
 EOF
@@ -1260,6 +1300,7 @@ function import_certificates () {
     done
   done
   sudo update-ca-certificates
+  certutil -d sql:$HOME/.pki/nssdb -L
 }
 
 # Allows to call a function based on arguments passed to the script
