@@ -4,3 +4,5 @@
 controller:
   ingressClassResource:
     name: nginx-01
+  service:
+    externalTrafficPolicy: "Local"
