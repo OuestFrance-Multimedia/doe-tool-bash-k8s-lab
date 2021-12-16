@@ -1296,10 +1296,10 @@ function import_certificates () {
       nb=$(certutil -d sql:$HOME/.pki/nssdb -L | sed -rn "/^${file}\s+/p" | wc -l); until [[ $nb -eq 0 ]]; do sleep 1; certutil -d sql:$HOME/.pki/nssdb -D -n "${file}" && nb=$(certutil -d sql:$HOME/.pki/nssdb -L | sed -rn "/^${file}\s+/p" | wc -l); done
       certutil -d sql:$HOME/.pki/nssdb -A -t "CT,c,c" -n "${file}" -i $tempfile
       certutil -d sql:$HOME/.pki/nssdb -L
-      sudo cp $tempfile /usr/local/share/ca-certificates/${file}
+      # sudo cp $tempfile /usr/local/share/ca-certificates/${file}
     done
   done
-  sudo update-ca-certificates
+  # sudo update-ca-certificates
   certutil -d sql:$HOME/.pki/nssdb -L
 }
 
