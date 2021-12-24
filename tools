@@ -388,12 +388,12 @@ function submodule_update () {
       fi
 
       if [[ $nb -eq 0 ]]; then
-        echo "no branches found"
+        echo "Error on submodule $m : no branches found"
         exit 1
       elif [[ $nb -eq 1 ]]; then
         branch=$branches
       else
-        echo "Found $nb branch(es): "$branches
+        echo "Error on submodule $m : found $nb branch(es): "$branches
         exit 1
       fi
             
