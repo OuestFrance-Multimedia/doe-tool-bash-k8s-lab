@@ -4,17 +4,17 @@
 alertmanager:
   ingress:
     enabled: true
-    annotations:
-      kubernetes.io/ingress.class: nginx
+    # annotations:
+    #   kubernetes.io/ingress.class: nginx-01
     pathType: Prefix
 grafana:
   ingress:
     enabled: true
-    annotations:
-      kubernetes.io/ingress.class: nginx
+    # annotations:
+    #   kubernetes.io/ingress.class: nginx-01
 prometheus:
   ingress:
     enabled: true
-    annotations:
-      kubernetes.io/ingress.class: nginx
+    # annotations:
+    #   kubernetes.io/ingress.class: nginx-01
     pathType: Prefix
