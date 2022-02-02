@@ -107,6 +107,32 @@ deploy-kube-prometheus-stack:
 	domains=$$(jo array[]=alertmanager.$${KIND_CLUSTER_NAME}.lan array[]=grafana.$${KIND_CLUSTER_NAME}.lan array[]=prometheus.$${KIND_CLUSTER_NAME}.lan|jq '.array')
 	jq --null-input --arg name "monitoring-tls-certificate" --arg domain "$${HELM_NAMESPACE}.$${KIND_CLUSTER_NAME}.lan" --argjson domains "$${domains}" '{"apiVersion": "cert-manager.io/v1", "kind": "Certificate", "metadata":{"name": $$name}, "spec":{"secretName": $$name, "issuerRef": {"name": "selfsigned-issuer"}, commonName: $$domain, "dnsNames": $$domains } }' | yq e -P | kubectl apply --context $$KUBE_CONTEXT --namespace "$$HELM_NAMESPACE" -f -
 #################################################################################################################################
+deploy-promtail: ## deploy-promtail
+deploy-promtail:
+	set -e
+	cd $(ROOT_DIR)
+	source tools
+	eval_env_files .env helm-dependencies/grafana_promtail.env
+	deploy_helm_chart --add-repo --pull-push-images --debug
+
+#################################################################################################################################
+# https://github.com/grafana/helm-charts/tree/main/charts
+
+# https://artifacthub.io/packages/helm/grafana/loki-canary
+# https://artifacthub.io/packages/helm/grafana/loki-distributed
+# https://artifacthub.io/packages/helm/grafana/loki-simple-scalable
+# https://artifacthub.io/packages/helm/grafana/loki-stack
+# https://artifacthub.io/packages/helm/grafana/loki
+
+
+deploy-loki-stack: ## deploy-loki-stack
+deploy-loki-stack:
+	set -e
+	cd $(ROOT_DIR)
+	source tools
+	eval_env_files .env helm-dependencies/grafana_promtail.env
+	deploy_helm_chart --add-repo --pull-push-images --debug
+#################################################################################################################################
 deploy-cert-manager: ## deploy-cert-manager
 deploy-cert-manager:
 	set -e
