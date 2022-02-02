@@ -130,7 +130,7 @@ deploy-loki-stack:
 	set -e
 	cd $(ROOT_DIR)
 	source tools
-	eval_env_files .env helm-dependencies/grafana_promtail.env
+	eval_env_files .env helm-dependencies/grafana_loki-stack.env
 	deploy_helm_chart --add-repo --pull-push-images --debug
 #################################################################################################################################
 deploy-cert-manager: ## deploy-cert-manager
