@@ -2,6 +2,6 @@ config:
   # lokiAddress: http://loki:3100/loki/api/v1/push
   lokiAddress: http://loki-distributed-gateway.logging.svc.cluster.local/loki/api/v1/push
 serviceMonitor:
-  enabled: false
+  enabled: true
   labels:
     release: kube-prometheus-stack

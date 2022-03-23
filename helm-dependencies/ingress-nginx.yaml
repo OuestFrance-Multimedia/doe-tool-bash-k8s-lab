@@ -6,3 +6,9 @@ controller:
     name: nginx-01
   service:
     externalTrafficPolicy: "Local"
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+      additionalLabels:
+        release: kube-prometheus-stack
