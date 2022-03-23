@@ -12,6 +12,9 @@ grafana:
     enabled: true
     # annotations:
     #   kubernetes.io/ingress.class: nginx-01
+  plugins:
+  - grafana-piechart-panel
+  - grafana-worldmap-panel
 prometheus:
   ingress:
     enabled: true
