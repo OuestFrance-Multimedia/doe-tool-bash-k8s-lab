@@ -155,6 +155,12 @@ deploy-loki-distributed:
 	cd $(ROOT_DIR)
 	source tools
 	eval_env_files .env helm-dependencies/grafana_loki-distributed.env
+	kubectl create namespace  --context $${KUBE_CONTEXT} $$HELM_NAMESPACE --dry-run=client --output=yaml --save-config | kubectl apply --context $${KUBE_CONTEXT} --filename=-
+	if ! kubectl get secret --context $${KUBE_CONTEXT} --namespace=$$HELM_NAMESPACE minio-credentials > /dev/null; then \
+		kubectl create secret generic  --context $${KUBE_CONTEXT} --namespace=$$HELM_NAMESPACE minio-credentials \
+			--from-literal=AWS_ACCESS_KEY="$$(kubectl get secrets/minio-credentials --context $${KUBE_CONTEXT} --namespace=minio -o jsonpath="{.data.rootUser}" | base64 -d)" \
+			--from-literal=AWS_SECRET_KEY="$$(kubectl get secrets/minio-credentials --context $${KUBE_CONTEXT} --namespace=minio -o jsonpath="{.data.rootPassword}" | base64 -d)";\
+	fi
 	deploy_helm_chart --add-repo --pull-push-images --debug
 
 deploy-loki-stack: ## deploy-loki-stack

@@ -1,5 +1,9 @@
 # https://artifacthub.io/packages/helm/grafana/loki-distributed
 # https://grafana.com/docs/loki/latest/configuration/#storage_config
+ingester:
+  extraEnvFrom:
+    - secretRef:
+        name: minio-credentials
 loki:
   structuredConfig:
     ingester:
@@ -11,12 +15,12 @@ loki:
       max_chunk_age: 1h
     storage_config:
       aws:
+        s3: http://minio.minio.svc.cluster.local.:9000/loki
         s3forcepathstyle: true
-        insecure: true
       boltdb_shipper:
         active_index_directory: /var/loki/index
         shared_store: s3
-        cache_location: /var/loki/index_cache
+        cache_location: /var/loki/cache
         resync_interval: 5s
     schema_config:
       configs:
