@@ -1,5 +1,10 @@
 # https://artifacthub.io/packages/helm/grafana/loki-distributed
 # https://grafana.com/docs/loki/latest/configuration/#storage_config
+serviceMonitor:
+  enabled: true
+  labels:
+    release: kube-prometheus-stack
+
 ingester:
   extraEnvFrom:
     - secretRef:
