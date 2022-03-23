@@ -40,7 +40,7 @@ install-variant-super: ## docker-network + kind + metallb + nginx-ingress-ctrl +
 install-variant-super: install-variant-full deploy-monitoring-logging-stack deploy-argocd import-kube-prometheus-stack-crt import-argocd-crt
 #################################################################################################################################
 install-variant-stock: ## docker-network + kind + metallb + nginx-ingress-ctrl + cert-manager + metrics-server + kube-prometheus-stack + minio + loki-distributed + promtail
-install-variant-stock: install-variant-full deploy-monitoring-logging-stack import-kube-prometheus-stack-crt
+install-variant-stock: install-variant-full deploy-monitoring-logging-stack deploy-kube-prometheus-stack-certificate import-kube-prometheus-stack-crt
 #################################################################################################################################
 install-variant-full: ## docker-network + kind + metallb + nginx-ingress-ctrl + cert-manager + metrics-server
 install-variant-full: install-variant-mini deploy-metrics-server
@@ -103,6 +103,13 @@ deploy-kube-prometheus-stack:
 	source tools
 	eval_env_files .env helm-dependencies/kube-prometheus-stack.env
 	deploy_helm_chart --add-repo --pull-push-images --debug
+
+deploy-kube-prometheus-stack-certificate: ## deploy-kube-prometheus-stack-certificate
+deploy-kube-prometheus-stack-certificate:
+	set -e
+	cd $(ROOT_DIR)
+	source tools
+	eval_env_files .env helm-dependencies/kube-prometheus-stack.env
 	jq --null-input '{"apiVersion": "cert-manager.io/v1", "kind": "Issuer", "metadata":{"name": "selfsigned-issuer"}, "spec":{"selfSigned": {}} }' | yq e -P | kubectl apply --context $$KUBE_CONTEXT --namespace "$$HELM_NAMESPACE" -f -
 	domains=$$(jo array[]=alertmanager.$${KIND_CLUSTER_NAME}.lan array[]=grafana.$${KIND_CLUSTER_NAME}.lan array[]=prometheus.$${KIND_CLUSTER_NAME}.lan|jq '.array')
 	jq --null-input --arg name "monitoring-tls-certificate" --arg domain "$${HELM_NAMESPACE}.$${KIND_CLUSTER_NAME}.lan" --argjson domains "$${domains}" '{"apiVersion": "cert-manager.io/v1", "kind": "Certificate", "metadata":{"name": $$name}, "spec":{"secretName": $$name, "issuerRef": {"name": "selfsigned-issuer"}, commonName: $$domain, "dnsNames": $$domains } }' | yq e -P | kubectl apply --context $$KUBE_CONTEXT --namespace "$$HELM_NAMESPACE" -f -
