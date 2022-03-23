@@ -124,6 +124,30 @@ deploy-promtail:
 # https://artifacthub.io/packages/helm/grafana/loki-stack
 # https://artifacthub.io/packages/helm/grafana/loki
 
+deploy-minio: ## deploy-minio
+deploy-minio:
+	set -e
+	cd $(ROOT_DIR)
+	source tools
+	eval_env_files .env helm-dependencies/minio_minio.env
+	kubectl create namespace  --context $${KUBE_CONTEXT} $$HELM_NAMESPACE --dry-run=client --output=yaml --save-config | kubectl apply --context $${KUBE_CONTEXT} --filename=-
+	if ! kubectl get secret --context $${KUBE_CONTEXT} --namespace=$$HELM_NAMESPACE minio-credentials > /dev/null; then \
+		kubectl create secret generic  --context $${KUBE_CONTEXT} --namespace=$$HELM_NAMESPACE minio-credentials \
+			--from-literal=rootUser="$$(openssl rand -hex 20)" \
+			--from-literal=rootPassword="$$(openssl rand -hex 40)";\
+	fi
+	deploy_helm_chart --add-repo --pull-push-images --debug --template
+	set +e
+	mc alias rm $${KIND_CLUSTER_NAME}-$${HELM_NAMESPACE}
+	set -e
+	mc alias set $${KIND_CLUSTER_NAME}-$${HELM_NAMESPACE} http://$${HELM_RELEASE}-api.$${KIND_CLUSTER_NAME}.lan $$(kubectl get secrets/minio-credentials --context $${KUBE_CONTEXT} --namespace=minio -o jsonpath="{.data.rootUser}" | base64 -d) $$(kubectl get secrets/minio-credentials --context $${KUBE_CONTEXT} --namespace=minio -o jsonpath="{.data.rootPassword}" | base64 -d)
+	mc admin info $${KIND_CLUSTER_NAME}-$${HELM_NAMESPACE}
+	mc ls $${KIND_CLUSTER_NAME}-$${HELM_NAMESPACE}/loki
+	tempfile=$$(mktemp /tmp/test-bucket-loki.XXXXXXXXXX)
+	trap "rm -Rf $tempfile" 0 2 3 15
+	head -c 1M </dev/urandom > $${tempfile}
+	mc cp $${tempfile} $${KIND_CLUSTER_NAME}-$${HELM_NAMESPACE}/loki/test-bucket-loki
+	mc ls $${KIND_CLUSTER_NAME}-$${HELM_NAMESPACE}/loki
 
 deploy-loki-stack: ## deploy-loki-stack
 deploy-loki-stack:

@@ -1,0 +1,34 @@
+# rootUser: admin
+
+existingSecret: minio-credentials
+
+buckets:
+    # Name of the bucket
+  - name: loki
+    # Policy to be set on the
+    # bucket [none|download|upload|public]
+    policy: public
+    # Purge if bucket exists already
+    purge: true
+    # set versioning for
+    versioning: true
+
+persistence:
+  size: 512Mi #1Gi
+  enabled: true
+
+replicas: 4
+
+resources:
+  requests:
+    memory: 128Mi # 1Gi # 16Gi
+
+ingress:
+  enabled: true
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: 32m
+
+consoleIngress:
+  enabled: true
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: 32m
