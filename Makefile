@@ -113,7 +113,7 @@ deploy-promtail:
 	cd $(ROOT_DIR)
 	source tools
 	eval_env_files .env helm-dependencies/grafana_promtail.env
-	deploy_helm_chart --add-repo --pull-push-images --debug
+	deploy_helm_chart --add-repo --pull-push-images --debug --template
 
 #################################################################################################################################
 # https://github.com/grafana/helm-charts/tree/main/charts
@@ -123,6 +123,10 @@ deploy-promtail:
 # https://artifacthub.io/packages/helm/grafana/loki-simple-scalable
 # https://artifacthub.io/packages/helm/grafana/loki-stack
 # https://artifacthub.io/packages/helm/grafana/loki
+
+#################################################################################################################################
+deploy-monitoring-logging-stack: ## deploy-monitoring-logging-stack
+deploy-monitoring-logging-stack: deploy-kube-prometheus-stack deploy-minio deploy-loki-distributed deploy-promtail
 
 deploy-minio: ## deploy-minio
 deploy-minio:
@@ -162,6 +166,8 @@ deploy-loki-distributed:
 			--from-literal=AWS_SECRET_KEY="$$(kubectl get secrets/minio-credentials --context $${KUBE_CONTEXT} --namespace=minio -o jsonpath="{.data.rootPassword}" | base64 -d)";\
 	fi
 	deploy_helm_chart --add-repo --pull-push-images --debug
+	kubectl apply --context $$KUBE_CONTEXT -f helm-dependencies/loki-distributed-datasource.yaml
+	kubectl rollout restart deployment kube-prometheus-stack-grafana --namespace monitoring --context $$KUBE_CONTEXT 
 
 deploy-loki-stack: ## deploy-loki-stack
 deploy-loki-stack:
