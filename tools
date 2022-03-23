@@ -1312,19 +1312,19 @@ function dl_dashboard () {
   while [ $# -gt 0 ]; do
     case "$1" in
       --id=*)
-        id="${1#*=}"
+        local id="${1#*=}"
         ;;
       --revision=*)
-        revision="${1#*=}"
+        local revision="${1#*=}"
         ;;
       --uid=*)
-        uid="${1#*=}"
+        local uid="${1#*=}"
         ;;
       --tags*)
-        tags+=("${1#*=}")
+        local tags+=("${1#*=}")
         ;;
       --argocd-notifications*)
-        argocd_notifications=1
+        local argocd_notifications=1
         ;;
       --help)
         print_usage

@@ -1977,15 +1977,6 @@
   "schemaVersion": 27,
   "style": "dark",
   "tags": [
-    "Prometheus",
-    "Loki",
-    "Prometheus",
-    "logs",
-    "app",
-    "Prometheus",
-    "Prometheus",
-    "Prometheus",
-    "Prometheus",
     "Prometheus"
   ],
   "templating": {

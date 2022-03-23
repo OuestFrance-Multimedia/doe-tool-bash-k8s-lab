@@ -4025,13 +4025,6 @@
   "schemaVersion": 26,
   "style": "dark",
   "tags": [
-    "Prometheus",
-    "Loki",
-    "Prometheus",
-    "logs",
-    "app",
-    "Prometheus",
-    "Prometheus",
     "Prometheus"
   ],
   "templating": {

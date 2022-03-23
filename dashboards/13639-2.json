@@ -213,7 +213,6 @@
   "schemaVersion": 26,
   "style": "dark",
   "tags": [
-    "Prometheus",
     "Loki",
     "Prometheus",
     "logs",
