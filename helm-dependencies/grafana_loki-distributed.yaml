@@ -4,6 +4,11 @@ ingester:
   extraEnvFrom:
     - secretRef:
         name: minio-credentials
+querier:
+  extraEnvFrom:
+    - secretRef:
+        name: minio-credentials
+
 loki:
   structuredConfig:
     ingester:
