@@ -126,7 +126,52 @@ deploy-promtail:
 
 #################################################################################################################################
 deploy-monitoring-logging-stack: ## deploy-monitoring-logging-stack
-deploy-monitoring-logging-stack: deploy-kube-prometheus-stack deploy-minio deploy-loki-distributed deploy-promtail
+deploy-monitoring-logging-stack: deploy-kube-prometheus-stack deploy-minio deploy-loki-distributed deploy-grafana-dashboards deploy-promtail
+
+grafana-update-dashboard: ## grafana-update-dashboard
+grafana-update-dashboard:
+	set -e
+	cd $(ROOT_DIR)
+	source tools
+# 	ArgoCD
+	dl_dashboard --id=14584 --revision=1 --tags=gitops
+#	Kubernetes - kube-dns
+	dl_dashboard --id=12321 --revision=2 --tags=Prometheus
+#	Logs / App
+	dl_dashboard --id=13639 --revision=2 --tags=Loki --tags=Prometheus --tags=logs --tags=app
+#	Node Overview
+	dl_dashboard --id=13824 --revision=2 --tags=Prometheus
+#	Container resources
+	dl_dashboard --id=14678 --revision=1 --tags=Prometheus
+#	kube-state-metrics-v2
+	dl_dashboard --id=13332 --revision=12 --tags=Prometheus
+#	NGINX Ingress controller
+	dl_dashboard --id=9614 --revision=1 --tags=Prometheus
+#	Kubernetes Nginx Ingress Prometheus NextGen
+	dl_dashboard --id=14314 --revision=2 --tags=Prometheus
+#	cert-manager
+	dl_dashboard --id=11001 --revision=1 --tags=Prometheus
+#	Loki & Promtail
+	dl_dashboard --id=10880 --revision=1 --tags=Prometheus
+#	Promtail 2.4.x
+	dl_dashboard --id=15443 --revision=2 --tags=Prometheus
+#	Loki Dashboard quick search
+	dl_dashboard --id=12019 --revision=2 --tags=Loki --tags=Prometheus
+#	Loki stack monitoring (Promtail, Loki)
+	dl_dashboard --id=14055 --revision=5 --tags=Loki --tags=Prometheus
+#	Analytics - NGINX / LOKI v2+ Data Source / Promtail v2+ Tool
+	dl_dashboard --id=13865 --revision=6 --tags=Loki --tags=Prometheus
+#	Troubleshooting Kubernetes (simple and fast view)
+	dl_dashboard --id=15196 --revision=3 --tags=Loki --tags=Prometheus
+
+deploy-grafana-dashboards: ## deploy-grafana-dashboards
+deploy-grafana-dashboards:
+	set -e
+	cd $(ROOT_DIR)
+	source tools
+	eval_env_files .env helm-dependencies/kube-prometheus-stack.env
+	for f in dashboards/*; do kubectl create configmap grafana-dashboard-$$(basename $${f}) --from-file=$${f} --dry-run=client --output yaml --context $${KUBE_CONTEXT} --namespace=$$HELM_NAMESPACE | kubectl apply --context $${KUBE_CONTEXT} --namespace=$$HELM_NAMESPACE -f -; done
+	for f in dashboards/*; do kubectl patch configmap grafana-dashboard-$$(basename $${f}) -p '{"metadata":{"labels":{"grafana_dashboard": "1"}}}' --context $${KUBE_CONTEXT} --namespace=$$HELM_NAMESPACE; done
 
 deploy-minio: ## deploy-minio
 deploy-minio:
