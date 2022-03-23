@@ -11,7 +11,6 @@ loki:
       max_chunk_age: 1h
     storage_config:
       aws:
-        # s3: http://c528403cdddd8d51cf26a7d1d3e44aff16a9f4ee:2e9391d6b78e5505fee9c2d40ad9235115a89dcb3902a109180c378af064a14a1c98eee8ed258671@minio.minio.svc.cluster.local:9000/loki
         s3forcepathstyle: true
         insecure: true
       boltdb_shipper:
