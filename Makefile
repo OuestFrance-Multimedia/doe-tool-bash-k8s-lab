@@ -140,7 +140,7 @@ deploy-minio:
 	set +e
 	mc alias rm $${KIND_CLUSTER_NAME}-$${HELM_NAMESPACE}
 	set -e
-	mc alias set $${KIND_CLUSTER_NAME}-$${HELM_NAMESPACE} http://$${HELM_RELEASE}-api.$${KIND_CLUSTER_NAME}.lan $$(kubectl get secrets/minio-credentials --context $${KUBE_CONTEXT} --namespace=minio -o jsonpath="{.data.rootUser}" | base64 -d) $$(kubectl get secrets/minio-credentials --context $${KUBE_CONTEXT} --namespace=minio -o jsonpath="{.data.rootPassword}" | base64 -d)
+	mc alias set $${KIND_CLUSTER_NAME}-$${HELM_NAMESPACE} http://$${HELM_RELEASE}-api.$${KIND_CLUSTER_NAME}.lan $$(kubectl get secrets/minio-credentials --context $${KUBE_CONTEXT} --namespace=$${HELM_NAMESPACE} -o jsonpath="{.data.rootUser}" | base64 -d) $$(kubectl get secrets/minio-credentials --context $${KUBE_CONTEXT} --namespace=$${HELM_NAMESPACE} -o jsonpath="{.data.rootPassword}" | base64 -d)
 	mc admin info $${KIND_CLUSTER_NAME}-$${HELM_NAMESPACE}
 	mc ls $${KIND_CLUSTER_NAME}-$${HELM_NAMESPACE}/loki
 	tempfile=$$(mktemp /tmp/test-bucket-loki.XXXXXXXXXX)
@@ -148,6 +148,14 @@ deploy-minio:
 	head -c 1M </dev/urandom > $${tempfile}
 	mc cp $${tempfile} $${KIND_CLUSTER_NAME}-$${HELM_NAMESPACE}/loki/test-bucket-loki
 	mc ls $${KIND_CLUSTER_NAME}-$${HELM_NAMESPACE}/loki
+
+deploy-loki-distributed: ## deploy-loki-distributed
+deploy-loki-distributed:
+	set -e
+	cd $(ROOT_DIR)
+	source tools
+	eval_env_files .env helm-dependencies/grafana_loki-distributed.env
+	deploy_helm_chart --add-repo --pull-push-images --debug
 
 deploy-loki-stack: ## deploy-loki-stack
 deploy-loki-stack:

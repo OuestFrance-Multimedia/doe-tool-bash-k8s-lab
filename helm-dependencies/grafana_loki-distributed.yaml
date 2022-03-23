@@ -1,0 +1,30 @@
+# https://artifacthub.io/packages/helm/grafana/loki-distributed
+# https://grafana.com/docs/loki/latest/configuration/#storage_config
+loki:
+  structuredConfig:
+    ingester:
+      # Disable chunk transfer which is not possible with statefulsets
+      # and unnecessary for boltdb-shipper
+      max_transfer_retries: 0
+      chunk_idle_period: 1h
+      chunk_target_size: 1536000
+      max_chunk_age: 1h
+    storage_config:
+      aws:
+        # s3: http://c528403cdddd8d51cf26a7d1d3e44aff16a9f4ee:2e9391d6b78e5505fee9c2d40ad9235115a89dcb3902a109180c378af064a14a1c98eee8ed258671@minio.minio.svc.cluster.local:9000/loki
+        s3forcepathstyle: true
+        insecure: true
+      boltdb_shipper:
+        active_index_directory: /var/loki/index
+        shared_store: s3
+        cache_location: /var/loki/index_cache
+        resync_interval: 5s
+    schema_config:
+      configs:
+        - from: 2020-09-07
+          store: boltdb-shipper
+          object_store: aws
+          schema: v11
+          index:
+            prefix: loki_index_
+            period: 24h
