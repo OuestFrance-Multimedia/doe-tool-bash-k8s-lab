@@ -32,3 +32,6 @@ consoleIngress:
   enabled: true
   annotations:
     nginx.ingress.kubernetes.io/proxy-body-size: 32m
+    kubernetes.io/tls-acme: "true"
+  tls:
+   - secretName: minio-console-tls-certificate

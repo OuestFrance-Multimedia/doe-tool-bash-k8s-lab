@@ -1303,6 +1303,19 @@ function import_certificates () {
   certutil -d sql:$HOME/.pki/nssdb -L
 }
 
+function prune_certificates () {
+  set -e
+
+  for c in $(certutil -d sql:$HOME/.pki/nssdb -L | cut -d' ' -f1 | sed -rn '/^.*\.crt/p'); do
+    certutil -d sql:$HOME/.pki/nssdb -D -n $c
+  done
+
+  # certutil -d sql:$HOME/.pki/nssdb -L
+  # sudo rm -Rf /usr/local/share/ca-certificates/*
+  # sudo update-ca-certificates --fresh
+  # sudo bash -c "find /etc/ssl/certs -type l ! -exec test -e {} \; -print0 | xargs -r0 rm"
+}
+
 function dl_dashboard () {
   set -e
   print_usage()
