@@ -5,3 +5,5 @@ server:
     - --insecure
   ingress:
     enabled: true
+
+fullnameOverride: argocd
