@@ -36,10 +36,10 @@ init:
 	eval $$(cat .env)
 	rm -Rf hosts-$${KIND_CLUSTER_NAME}.conf
 	if  [[ -n "$$OVERWRITE" ]] || ! [[ -f ../../hosts-$${KIND_CLUSTER_NAME}.conf ]]; then \
-		echo "143.25.255.200	grafana.$${KIND_CLUSTER_NAME}.lan" > ../../hosts-$${KIND_CLUSTER_NAME}.conf; \
-		echo "143.25.255.200	prometheus.$${KIND_CLUSTER_NAME}.lan" >> ../../hosts-$${KIND_CLUSTER_NAME}.conf; \
-		echo "143.25.255.200	alertmanager.$${KIND_CLUSTER_NAME}.lan" >> ../../hosts-$${KIND_CLUSTER_NAME}.conf; \
-		echo "143.25.255.200	minio-console.$${KIND_CLUSTER_NAME}.lan" >> ../../hosts-$${KIND_CLUSTER_NAME}.conf; \
+		echo "$${NETWORK_PREFIX}.255.200	grafana.$${KIND_CLUSTER_NAME}.lan" > ../../hosts-$${KIND_CLUSTER_NAME}.conf; \
+		echo "$${NETWORK_PREFIX}.255.200	prometheus.$${KIND_CLUSTER_NAME}.lan" >> ../../hosts-$${KIND_CLUSTER_NAME}.conf; \
+		echo "$${NETWORK_PREFIX}.255.200	alertmanager.$${KIND_CLUSTER_NAME}.lan" >> ../../hosts-$${KIND_CLUSTER_NAME}.conf; \
+		echo "$${NETWORK_PREFIX}.255.200	minio-console.$${KIND_CLUSTER_NAME}.lan" >> ../../hosts-$${KIND_CLUSTER_NAME}.conf; \
 	fi
 	ln -s ../../hosts-$${KIND_CLUSTER_NAME}.conf .
 
