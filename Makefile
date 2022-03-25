@@ -19,7 +19,8 @@ init:
 		echo KIND_CLUSTER_NAME=$${KIND_CLUSTER_NAME} > ../../.env; \
 		echo KIND_CLUSTER_IMAGE=kindest/node:v1.19.7 >> ../../.env;\
 		echo KUBE_CONTEXT=kind-$${KIND_CLUSTER_NAME} >> ../../.env; \
-		echo NETWORK_PREFIX=10.20 >> ../../.env; \
+		echo NETWORK_PREFIX=$$(( ( RANDOM % 171 )  + 1 )).$$(( ( RANDOM % 255 )  + 1 )) >> ../../.env; \
+		echo "ARGOCD_SERVER_ADMIN_PASSWORD=$$(< /dev/urandom tr -dc _A-Z-a-z-0-9 | head -c$${1:-20};echo;)" >> ../../.env; \
 	fi
 	ln -s ../../.env .
 	rm -Rf kind-config.yaml
@@ -304,8 +305,8 @@ deploy-argocd:
 	source tools
 	eval_env_files .env helm-dependencies/argocd.env
 	deploy_helm_chart --add-repo --pull-push-images --debug
-	jq --null-input '{"apiVersion": "cert-manager.io/v1", "kind": "Issuer", "metadata":{"name": "selfsigned-issuer"}, "spec":{"selfSigned": {}} }' | yq e -P | kubectl apply --context $$KUBE_CONTEXT --namespace "$$HELM_NAMESPACE" -f -
-	jq --null-input --arg name "$$HELM_NAMESPACE-tls-certificate" --arg domain "$${HELM_NAMESPACE}.$${KIND_CLUSTER_NAME}.lan" '{"apiVersion": "cert-manager.io/v1", "kind": "Certificate", "metadata":{"name": $$name}, "spec":{"secretName": $$name, "issuerRef": {"name": "selfsigned-issuer"}, commonName: $$domain, "dnsNames": [$$domain]} }' | yq e -P | kubectl apply --context $$KUBE_CONTEXT --namespace "$$HELM_NAMESPACE" -f -
+#	jq --null-input '{"apiVersion": "cert-manager.io/v1", "kind": "Issuer", "metadata":{"name": "selfsigned-issuer"}, "spec":{"selfSigned": {}} }' | yq e -P | kubectl apply --context $$KUBE_CONTEXT --namespace "$$HELM_NAMESPACE" -f -
+#	jq --null-input --arg name "$$HELM_NAMESPACE-tls-certificate" --arg domain "$${HELM_NAMESPACE}.$${KIND_CLUSTER_NAME}.lan" '{"apiVersion": "cert-manager.io/v1", "kind": "Certificate", "metadata":{"name": $$name}, "spec":{"secretName": $$name, "issuerRef": {"name": "selfsigned-issuer"}, commonName: $$domain, "dnsNames": [$$domain]} }' | yq e -P | kubectl apply --context $$KUBE_CONTEXT --namespace "$$HELM_NAMESPACE" -f -
 #################################################################################################################################
 deploy-gitlab: ## deploy-gitlab
 deploy-gitlab:
