@@ -1,6 +1,6 @@
 # Make defaults
 .ONESHELL:
-.SILENT: pull-push-images create-docker-network create-kind destroy deploy-small-stack deploy-full-stack deploy-metallb deploy-metrics-server deploy-kube-prometheus-stack deploy-nginx-ingress-controller deploy-cert-manager deploy-argocd show-creds deploy-gitlab gitlab-pull-push-dind-images gitlab-create-root-personal_access_tokens import-kube-prometheus-stack-crt import-argocd-crt import-gitlab-crt config-etc-hosts
+.SILENT: init pull-push-images create-docker-network create-kind destroy deploy-small-stack deploy-full-stack deploy-metallb deploy-metrics-server deploy-kube-prometheus-stack deploy-nginx-ingress-controller deploy-cert-manager deploy-argocd show-creds deploy-gitlab gitlab-pull-push-dind-images gitlab-create-root-personal_access_tokens import-kube-prometheus-stack-crt import-argocd-crt import-gitlab-crt config-etc-hosts
 .DEFAULT_GOAL := help
 
 SHELL := /bin/bash
@@ -8,6 +8,39 @@ ROOT_DIR:=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 
 # MAKEFLAGS := --jobs=$(shell nproc)
 # MAKEFLAGS += --output-sync=target
+
+init: ## init
+init:
+	set -e
+	cd $(ROOT_DIR)
+	rm -Rf .env
+	if  [[ -n "$$OVERWRITE" ]] || ! [[ -f ../../.env ]]; then \
+		KIND_CLUSTER_NAME=$$(hostname | tr '[:upper:]' '[:lower:]'); \
+		echo KIND_CLUSTER_NAME=$${KIND_CLUSTER_NAME} > ../../.env; \
+		echo KIND_CLUSTER_IMAGE=kindest/node:v1.19.7 >> ../../.env;\
+		echo KUBE_CONTEXT=kind-$${KIND_CLUSTER_NAME} >> ../../.env; \
+		echo NETWORK_PREFIX=10.20 >> ../../.env; \
+	fi
+	ln -s ../../.env .
+	rm -Rf kind-config.yaml
+	if  [[ -n "$$OVERWRITE" ]] || ! [[ -f ../../kind-config.yaml ]]; then \
+		echo "---" > ../../kind-config.yaml; \
+		echo "kind: Cluster" >> ../../kind-config.yaml;\
+		echo "apiVersion: kind.x-k8s.io/v1alpha4" >> ../../kind-config.yaml; \
+		echo "nodes:" >> ../../kind-config.yaml; \
+		echo "- role: control-plane" >> ../../kind-config.yaml; \
+		echo "- role: worker" >> ../../kind-config.yaml; \
+	fi
+	ln -s ../../kind-config.yaml .
+	eval $$(cat .env)
+	rm -Rf hosts-$${KIND_CLUSTER_NAME}.conf
+	if  [[ -n "$$OVERWRITE" ]] || ! [[ -f ../../hosts-$${KIND_CLUSTER_NAME}.conf ]]; then \
+		echo "143.25.255.200	grafana.$${KIND_CLUSTER_NAME}.lan" > ../../hosts-$${KIND_CLUSTER_NAME}.conf; \
+		echo "143.25.255.200	prometheus.$${KIND_CLUSTER_NAME}.lan" >> ../../hosts-$${KIND_CLUSTER_NAME}.conf; \
+		echo "143.25.255.200	alertmanager.$${KIND_CLUSTER_NAME}.lan" >> ../../hosts-$${KIND_CLUSTER_NAME}.conf; \
+		echo "143.25.255.200	minio-console.$${KIND_CLUSTER_NAME}.lan" >> ../../hosts-$${KIND_CLUSTER_NAME}.conf; \
+	fi
+	ln -s ../../hosts-$${KIND_CLUSTER_NAME}.conf .
 
 create: ## create
 create: create-docker-network create-kind deploy-metrics-server deploy-metallb deploy-nginx-ingress-controller deploy-cert-manager deploy-kube-prometheus-stack
