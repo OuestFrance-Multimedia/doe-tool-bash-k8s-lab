@@ -299,10 +299,10 @@ gitlab-pull-push-dind-images:
 	trap "rm -Rf $$tempfile_envfile" 0 2 3 15
 	echo "DOCKER_BUILD_REPOSITORY=docker" > $$tempfile_envfile
 	echo "DOCKER_BUILD_TAG=20.10.8" >> $$tempfile_envfile
-	push_images --env-file=.env --env-file=helm-dependencies/gitlab.env --env-file=$$tempfile_envfile
+	pull_push_images --env-file=.env --env-file=helm-dependencies/gitlab.env --env-file=$$tempfile_envfile
 	echo "DOCKER_BUILD_REPOSITORY=docker" > $$tempfile_envfile
 	echo "DOCKER_BUILD_TAG=20.10.8-dind" >> $$tempfile_envfile
-	push_images --env-file=.env --env-file=helm-dependencies/gitlab.env --env-file=$$tempfile_envfile
+	pull_push_images --env-file=.env --env-file=helm-dependencies/gitlab.env --env-file=$$tempfile_envfile
 #################################################################################################################################
 gitlab-create-root-personal_access_tokens: ## gitlab-create-root-personal_access_tokens
 gitlab-create-root-personal_access_tokens:
