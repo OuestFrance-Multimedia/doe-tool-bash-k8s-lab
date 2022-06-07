@@ -8,9 +8,9 @@ ingressShim:
   defaultIssuerName: selfsigned-cluster-issuer
   defaultIssuerKind: ClusterIssuer
   defaultIssuerGroup: cert-manager.io
-prometheus:
-  enabled: true
-  servicemonitor:
-    enabled: true
-    labels:
-      release: kube-prometheus-stack
+#prometheus:
+#  enabled: true
+#  servicemonitor:
+#    enabled: true
+#    labels:
+#      release: kube-prometheus-stack
