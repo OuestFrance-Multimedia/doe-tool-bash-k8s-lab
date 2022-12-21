@@ -1,10 +1,3 @@
 # https://artifacthub.io/packages/helm/bitnami/metallb
 # https://github.com/bitnami/charts/blob/master/bitnami/metallb/values.yaml
 ---
-## configInline specifies MetalLB's configuration directly, in yaml format. When configInline is used, Helm manages MetalLB's
-## configuration ConfigMap as part of the release, and existingConfigMap is ignored.
-## Refer to https://metallb.universe.tf/configuration/ for available options.
-configInline:
-  address-pools:
-  - name: default
-    protocol: layer2
