@@ -10,7 +10,7 @@ ROOT_DIR:=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 # MAKEFLAGS += --output-sync=target
 
 create: ## create
-create: create-docker-network create-kind deploy-metrics-server deploy-metallb deploy-nginx-ingress-controller deploy-cert-manager deploy-kube-prometheus-stack
+create: create-docker-network create-kind deploy-metrics-server deploy-metallb deploy-nginx-ingress-controller deploy-cert-manager deploy-kube-prometheus-stack apply-metallb-conf
 #################################################################################################################################
 destroy: ## destroy
 destroy:
@@ -85,6 +85,14 @@ deploy-metallb:
 	source tools
 	eval_env_files .env helm-dependencies/metallb.env
 	deploy_helm_chart --add-repo --pull-push-images --debug
+#################################################################################################################################
+apply-metallb-conf:
+apply-metallb-conf: ##deploy-metallb-conf
+	set -e
+	cd $(ROOT_DIR)
+	source tools
+	eval_env_files .env helm-dependencies/metallb.env
+	kubectl apply -f helm-dependencies/metallb-conf.yaml --context $${KUBE_CONTEXT}
 #################################################################################################################################
 deploy-metrics-server: ## deploy-metrics-server
 deploy-metrics-server:
