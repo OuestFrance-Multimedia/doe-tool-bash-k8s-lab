@@ -10,7 +10,7 @@ ROOT_DIR:=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 # MAKEFLAGS += --output-sync=target
 
 create: ## create
-create: create-docker-network create-kind deploy-metrics-server deploy-metallb deploy-nginx-ingress-controller deploy-cert-manager deploy-kube-prometheus-stack apply-metallb-conf
+create: create-docker-network create-kind deplomongoy-metrics-server deploy-metallb deploy-nginx-ingress-controller deploy-cert-manager deploy-kube-prometheus-stack apply-metallb-conf
 #################################################################################################################################
 destroy: ## destroy
 destroy:
@@ -227,7 +227,7 @@ deploy-loki-distributed:
 	fi
 	deploy_helm_chart --add-repo --pull-push-images --debug
 	kubectl apply --context $$KUBE_CONTEXT -f helm-dependencies/loki-distributed-datasource.yaml
-	kubectl rollout restart deployment kube-prometheus-stack-grafana --namespace monitoring --context $$KUBE_CONTEXT 
+	kubectl rollout restart deployment kube-prometheus-stack-grafana --namespace monitoring --context $$KUBE_CONTEXT
 
 deploy-loki-stack: ## deploy-loki-stack
 deploy-loki-stack:
@@ -404,7 +404,7 @@ show-creds:
 #############################################################################
 	echo ---
 	jq --null-input --arg app metallb --arg secret $${METALLB_SPEAKER_SECRET_VALUE} '{"app": $$app, "secret": $$secret}' | yq e -P
-#############################################################################	
+#############################################################################
 	eval $$(cat helm-dependencies/argocd.env)
 
 	app=argocd-server
