@@ -10,7 +10,7 @@ ROOT_DIR:=$(shell dirname $(realpath $(firstword $(MAKEFILE_LIST))))
 # MAKEFLAGS += --output-sync=target
 
 create: ## create
-create: create-docker-network create-kind deplomongoy-metrics-server deploy-metallb deploy-nginx-ingress-controller deploy-cert-manager deploy-kube-prometheus-stack apply-metallb-conf
+create: create-docker-network create-kind deploy-metrics-server deploy-metallb deploy-nginx-ingress-controller deploy-cert-manager deploy-kube-prometheus-stack apply-metallb-conf
 #################################################################################################################################
 destroy: ## destroy
 destroy:
