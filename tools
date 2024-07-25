@@ -335,7 +335,7 @@ function wait_cluster () {
   for control_plane in $controls_planes; do
     HostPort=$(docker inspect $control_plane|jq -r '.[].NetworkSettings.Ports["6443/tcp"][0].HostPort')
     HostIp=$(docker inspect $control_plane|jq -r '.[].NetworkSettings.Ports["6443/tcp"][0].HostIp')
-    while ! timeout 1 bash -c "echo > /dev/tcp/$HostIp/$HostPort"; do   
+    while ! timeout 1 bash -c "echo > /dev/tcp/$HostIp/$HostPort"; do
       sleep $(shuf -i 1-5 -n 1) # wait for 1-5 seconds before check again
     done
   done
@@ -396,11 +396,11 @@ function submodule_update () {
         echo "Error on submodule $m : found $nb branch(es): "$branches
         exit 1
       fi
-            
+
       git fetch origin $branch:$branch
       git checkout --quiet ${branch}
     fi
-    echo "$m : $branch" 
+    echo "$m : $branch"
     cd $OLDPWD
   done
 }
@@ -549,8 +549,10 @@ function push_images () {
   #   exit 1
   # fi
 
+
   for i in "${env_files[@]}"
   do
+    echo $i
     eval $(cat $i)
     if [[ -n "$(sed -rn '/^KIND_CLUSTER_NAME=/p' $i)" ]]; then
       print_info --type=warning --text="push_images - wait kind cluster ${KIND_CLUSTER_NAME} start ..."
@@ -823,7 +825,7 @@ function pull_push_images () {
 
   args=
   for i in "${env_files[@]}"
-  do 
+  do
     args="$args $(echo -n '--env-file='$i)"
   done
 
@@ -974,7 +976,7 @@ function helm_template () {
     ${HELM_CHART}
 EOF
 )
-  
+
   if [[ -n "$debug" ]]; then echo -e "\e[1;31m$(echo $command | sed ':a;N;$!ba;s#\\\n##g')\e[0m"; fi
   output=$(eval "$command")
   echo "$output"|yq eval -P
@@ -1367,7 +1369,7 @@ function dl_dashboard () {
 
   args=
   for i in "${tags[@]}"
-  do 
+  do
     args="$args $(echo -n 'array[]='$i)"
   done
 
