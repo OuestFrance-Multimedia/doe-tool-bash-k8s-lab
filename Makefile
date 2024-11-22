@@ -441,8 +441,8 @@ install-kubectl:
 	if ! [ -f /usr/share/keyrings/kubernetes-archive-keyring.gpg ]; then \
 		curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo gpg --dearmor -o /usr/share/keyrings/kubernetes-archive-keyring.gpg ; \
 	fi; \
-	if [[ ! -f /etc/apt/sources.list.d/kubernetes.list ]] || [[ ! $$(grep -Po "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" /etc/apt/sources.list.d/kubernetes.list) ]] ; then \
-		echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list > /dev/null
+	if [[ ! -f /etc/apt/sources.list.d/kubernetes.list ]] || [[ ! $$(grep -Po "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /" /etc/apt/sources.list.d/kubernetes.list) ]] ; then \
+		echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.30/deb/ /" | sudo tee /etc/apt/sources.list.d/kubernetes.list > /dev/null
 	fi; \
 	packages="kubectl"; \
 	packages_list=''; \
@@ -527,7 +527,7 @@ install-kind:
 
 install-packages: ## install-packages
 install-packages:
-	packages="openssl kubectl jq jo dnsutils iputils-ping netcat procps curl mariadb-client libnss3-tools"; \
+	packages="openssl kubectl jq jo dnsutils iputils-ping netcat procps curl mariadb-client libnss3-tools git-crypt google-cloud-sdk-gke-gcloud-auth-plugin"; \
 	packages_list=''; \
 	for package in $$packages; do [ -z "`dpkg -l | grep -P "ii\s+$$package(?:[\s+|:])" || :`" ] && packages_list="$$packages_list $$package"; done
 	if ! [ -z "$$packages_list" ]; then \
