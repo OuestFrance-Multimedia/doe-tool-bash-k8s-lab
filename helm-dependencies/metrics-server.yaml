@@ -6,3 +6,8 @@ apiService:
 extraArgs:
   - --kubelet-insecure-tls=true
   - --kubelet-preferred-address-types=InternalIP
+image:
+  registry: docker.io
+  repository: bitnamilegacy/metrics-server
+  tag: 0.6.2-debian-11-r0
+  pullPolicy: IfNotPresent
