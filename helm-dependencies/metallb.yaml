@@ -1,3 +1,16 @@
 # https://artifacthub.io/packages/helm/bitnami/metallb
 # https://github.com/bitnami/charts/blob/master/bitnami/metallb/values.yaml
 ---
+controller:
+  image:
+    registry: docker.io
+    repository: bitnamilegacy/metallb-controller
+    tag: 0.13.7-debian-11-r19
+    pullPolicy: IfNotPresent
+
+speaker:
+  image:
+    registry: docker.io
+    repository: bitnamilegacy/metallb-speaker
+    tag: 0.13.7-debian-11-r19
+    pullPolicy: IfNotPresent
